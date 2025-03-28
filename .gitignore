@@ -3,3 +3,5 @@ node_modules
 dogtolib/
 
 dist/
+
+.DS_Store

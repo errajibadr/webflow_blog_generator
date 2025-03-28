@@ -4,7 +4,7 @@
   "description": "Enrich Webflow exports with blog functionality",
   "main": "enrich-webflow-export.js",
   "scripts": {
-    "start": "node enrich-webflow-export.js --export ./dogtolib/ --csv ./data/blog_posts.csv --config ./blog-config.json --output ./dist",
+    "start": "node enrich-webflow-export.js --export ./dogtolib/ --csv ./data/dogtolib/ --config ./blog-config.json --output ./dist",
     "serve": "serve dist",
     "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json --exec 'npm start'",
     "dev": "concurrently \"npm run watch\" \"npm run serve\""
