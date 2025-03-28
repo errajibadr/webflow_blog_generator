@@ -97,11 +97,54 @@
 
   .post-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    gap: 0.75rem; /* Reduced gap to fit better */
     margin-bottom: 0.5rem;
     font-size: 0.85rem;
     color: #6B6B6B;
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+    -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+    align-items: center;
+  }
+
+  /* Hide scrollbar for Chrome/Safari */
+  .post-meta::-webkit-scrollbar {
+    display: none;
+  }
+
+  .post-meta > * {
+    position: relative;
+    padding-right: 0.75rem;
+  }
+
+  .post-meta > *:not(:last-child)::after {
+    content: "•";
+    position: absolute;
+    right: 0;
+    opacity: 0.5;
+  }
+
+  /* Make sure the date doesn't wrap and shows ellipsis if too long */
+  .publication-date {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px; /* Adjust this value based on your needs */
+  }
+
+  /* Ensure reading time stays compact */
+  .reading-time {
+    white-space: nowrap;
+  }
+
+  /* Keep author name from getting too long */
+  .author {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px; /* Adjust this value based on your needs */
   }
 
   .post-excerpt {
@@ -164,6 +207,84 @@
     /* On mobile, make sure the image is still properly sized */
     .post-image-wrapper {
       aspect-ratio: 16/9; /* Maintain the same ratio */
+    }
+  }
+
+  /* Social Icons Styling */
+  .footer-wrapper-3 .social-icons {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.5rem 1rem;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .footer-wrapper-3 .social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px !important;
+    height: 48px !important;
+    transition: transform 0.2s ease;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .footer-wrapper-3 .social-icon svg {
+    width: 32px !important;
+    height: 32px !important;
+    fill: #ffffff !important; /* White color for better visibility on dark background */
+  }
+
+  .footer-wrapper-3 .social-icon svg path {
+    fill: #ffffff !important;
+  }
+
+  .footer-wrapper-3 .social-icon:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Specific colors for different social platforms on hover */
+  .footer-wrapper-3 .social-icon.facebook:hover svg,
+  .footer-wrapper-3 .social-icon.facebook:hover svg path {
+    fill: #1877F2 !important;
+  }
+
+  .footer-wrapper-3 .social-icon.twitter:hover svg,
+  .footer-wrapper-3 .social-icon.twitter:hover svg path {
+    fill: #1DA1F2 !important;
+  }
+
+  .footer-wrapper-3 .social-icon.linkedin:hover svg,
+  .footer-wrapper-3 .social-icon.linkedin:hover svg path {
+    fill: #0A66C2 !important;
+  }
+
+  .footer-wrapper-3 .social-icon.instagram:hover svg,
+  .footer-wrapper-3 .social-icon.instagram:hover svg path {
+    fill: #E4405F !important;
+  }
+
+  .footer-wrapper-3 .social-icon.github:hover svg,
+  .footer-wrapper-3 .social-icon.github:hover svg path {
+    fill: #181717 !important;
+  }
+
+  @media (max-width: 768px) {
+    .footer-wrapper-3 .social-icons {
+      gap: 1rem;
+    }
+    
+    .footer-wrapper-3 .social-icon {
+      width: 40px !important;
+      height: 40px !important;
+    }
+    
+    .footer-wrapper-3 .social-icon svg {
+      width: 28px !important;
+      height: 28px !important;
     }
   }
   </style>
@@ -240,7 +361,7 @@
               <div class="post-content-wrapper">
                 <h2 class="post-title">{{titre}}</h2>
                 <div class="post-meta">
-                  <span class="author">Par {{auteur}}</span>
+                  <span class="author">{{auteur}}</span>
                   <span class="reading-time">{{duree_lecture}} de lecture</span>
                   <span class="publication-date">{{date_publication}}</span>
                 </div>

@@ -190,6 +190,9 @@ async function copyAssets(outputDir, config) {
 async function generateBlogListing(posts, config, outputDir) {
   const template = await readTemplate(path.join(__dirname, 'src', 'templates', 'blog.html'));
   
+  // Sort posts by date (most recent first)
+  posts.sort((a, b) => new Date(b['Date de publication']) - new Date(a['Date de publication']));
+  
   const templateData = {
     config,
     posts: posts.map(post => ({
@@ -208,6 +211,7 @@ async function generateBlogListing(posts, config, outputDir) {
   const html = template(templateData);
   const outputFile = path.join(outputDir, 'blog.html');
   await fs.outputFile(outputFile, html);
+  console.log('Generated: blog.html with sorted posts');
 }
 
 // Generate individual blog post pages

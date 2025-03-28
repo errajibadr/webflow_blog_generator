@@ -4,16 +4,20 @@
   "description": "Enrich Webflow exports with blog functionality",
   "main": "enrich-webflow-export.js",
   "scripts": {
-    "start": "node enrich-webflow-export.js",
-    "serve": "serve dist"
+    "start": "node enrich-webflow-export.js --export ./dogtolib/ --csv ./data/blog_posts.csv --config ./blog-config.json --output ./dist",
+    "serve": "serve dist",
+    "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json --exec 'npm start'",
+    "dev": "concurrently \"npm run watch\" \"npm run serve\""
   },
   "dependencies": {
-    "fs-extra": "^11.2.0",
     "csv-parse": "^5.5.3",
+    "fs-extra": "^11.2.0",
     "handlebars": "^4.7.8",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.9",
     "serve": "^14.2.1"
   },
   "keywords": [
