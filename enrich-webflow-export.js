@@ -6,6 +6,7 @@ const { parse } = require('csv-parse/sync');
 const Handlebars = require('handlebars');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const cheerio = require('cheerio');
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -191,6 +192,49 @@ async function copyDogPictures(outputDir) {
   }
 }
 
+// Helper function to check if an image URL is valid
+function isValidImageUrl(url) {
+  if (!url) return false;
+  // Check if URL is absolute
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return true;
+  }
+  // Check if URL is relative and points to an existing file in dist/images
+  if (url.startsWith('/images/')) {
+    const imagePath = path.join(argv.output, url);
+    return fs.existsSync(imagePath);
+  }
+  return false;
+}
+
+// Helper function to process article content and fix invalid image sources
+function processArticleContent(content) {
+  if (!content) return content;
+
+  // Create a temporary DOM element to parse HTML
+  const $ = cheerio.load(content);
+
+  // Find all img tags
+  $('img').each((index, element) => {
+    const img = $(element);
+    const currentSrc = img.attr('src');
+
+    // Check if current src is invalid
+    if (!isValidImageUrl(currentSrc)) {
+      console.log(`Found invalid image src: ${currentSrc}`);
+      // Get next default image
+      const newSrc = getNextDefaultImage();
+      if (newSrc) {
+        console.log(`Replacing with: ${newSrc}`);
+        img.attr('src', newSrc);
+      }
+    }
+  });
+
+  // Return the processed HTML content
+  return $.html();
+}
+
 // Helper function to read and parse CSV file
 async function readCsvFile(filePath, config) {
   console.log(`\nReading CSV file: ${filePath}`);
@@ -214,7 +258,9 @@ async function readCsvFile(filePath, config) {
     // Use default author from config if none provided
     auteur: post['auteur'] || config.site.author.name,
     // Use next available dog picture if no article photo provided
-    'photo article': post['photo article'] || getNextDefaultImage()
+    'photo article': post['photo article'] || getNextDefaultImage(),
+    // Process article content to fix invalid image sources
+    'Contenu article': processArticleContent(post['Contenu article'])
   }));
 
   if (validPosts.length !== posts.length) {
@@ -248,7 +294,9 @@ async function readJsonFile(filePath, config) {
     // Use default author from config if none provided
     auteur: post['auteur'] || config.site.author.name,
     // Use next available dog picture if no article photo provided
-    'photo article': post['photo article'] || getNextDefaultImage()
+    'photo article': post['photo article'] || getNextDefaultImage(),
+    // Process article content to fix invalid image sources
+    'Contenu article': processArticleContent(post['Contenu article'])
   }));
 
   if (validPosts.length !== postsArray.length) {

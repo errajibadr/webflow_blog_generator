@@ -10,6 +10,7 @@
     "dev": "concurrently \"npm run watch\" \"npm run serve\""
   },
   "dependencies": {
+    "cheerio": "^1.0.0",
     "csv-parse": "^5.5.3",
     "fs-extra": "^11.2.0",
     "handlebars": "^4.7.8",
