@@ -1,22 +1,20 @@
 {
   "name": "webflow-blog-generator",
   "version": "1.0.0",
-  "description": "Générateur de blog à partir d'exports Webflow",
-  "main": "generate.js",
-  "bin": {
-    "generate-blog": "./generate.js"
-  },
+  "description": "Enrich Webflow exports with blog functionality",
+  "main": "enrich-webflow-export.js",
   "scripts": {
-    "start": "node generate.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node enrich-webflow-export.js",
+    "serve": "serve dist"
   },
   "dependencies": {
-    "commander": "^11.1.0",
-    "csv-parse": "^5.5.3",
     "fs-extra": "^11.2.0",
-    "glob": "^10.3.10",
+    "csv-parse": "^5.5.3",
     "handlebars": "^4.7.8",
-    "http-server": "^14.1.1"
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
   },
   "keywords": [
     "webflow",
