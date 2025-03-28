@@ -7,7 +7,7 @@
         "author": {
             "name": "John Doe",
             "bio": "Technology enthusiast and writer",
-            "photo": "/images/author.jpg"
+            "photo": "src/assets/images/author.webp"
         },
         "logo": "/images/logo.png",
         "favicon": "/images/favicon.ico"

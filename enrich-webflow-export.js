@@ -142,7 +142,8 @@ async function copyAssets(outputDir, config) {
   await fs.ensureDir(path.join(outputDir, 'css'));
   await fs.ensureDir(path.join(outputDir, 'assets', 'js'));
   await fs.ensureDir(path.join(outputDir, 'assets', 'images', 'social'));
-  
+  await fs.ensureDir(path.join(outputDir, 'images')); // Add images directory
+
   // Copy all CSS files from src/assets/css
   const cssSourceDir = path.join(__dirname, 'src', 'assets', 'css');
   const cssDestDir = path.join(outputDir, 'css');
@@ -167,6 +168,23 @@ async function copyAssets(outputDir, config) {
   const socialIconsSource = path.join(__dirname, 'src', 'assets', 'images', 'social');
   const socialIconsDest = path.join(outputDir, 'assets', 'images', 'social');
   await fs.copy(socialIconsSource, socialIconsDest);
+
+  // Copy default author image if it exists in config
+  if (config.site.author.photo) {
+    const authorPhotoSource = path.join(__dirname, config.site.author.photo);
+    const authorPhotoFilename = path.basename(config.site.author.photo);
+    const authorPhotoDest = path.join(outputDir, 'images', authorPhotoFilename);
+    
+    try {
+      await fs.copy(authorPhotoSource, authorPhotoDest);
+      console.log('Copied default author photo:', authorPhotoFilename);
+      
+      // Update the config to use the new path
+      config.site.author.photo = `/images/${authorPhotoFilename}`;
+    } catch (error) {
+      console.error('Error copying default author photo:', error);
+    }
+  }
 
   // Generate dynamic CSS with theme colors
   const dynamicCss = `
