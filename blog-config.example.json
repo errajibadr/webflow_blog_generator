@@ -5,6 +5,12 @@
         "logo": "/images/logo.png",
         "favicon": "/images/favicon.ico"
     },
+    "ui": {
+        "backgroundColor": "#F8F4E9",
+        "primaryColor": "#1a8917",
+        "textColor": "#000000",
+        "linkColor": "#1a8917"
+    },
     "social": {
         "facebook": "https://facebook.com/monblog",
         "twitter": "https://twitter.com/monblog",

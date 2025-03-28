@@ -165,6 +165,7 @@ async function copyAssets(outputDir, config) {
       --header-background: ${config.ui.headerBackground};
       --text-color: ${config.ui.textColor};
       --link-color: ${config.ui.linkColor};
+      --config-background-color: ${config.ui.backgroundColor};
     }
   `;
   await fs.writeFile(path.join(outputDir, 'css', 'theme.css'), dynamicCss);
