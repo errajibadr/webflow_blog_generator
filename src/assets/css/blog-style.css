@@ -48,10 +48,10 @@ body {
 }
 
 .logo {
-    color: white;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    color: var(--text-color);
     font-size: 2rem;
     font-weight: bold;
+    text-decoration: none;
 }
 
 .big-tagline {
