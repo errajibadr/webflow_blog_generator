@@ -143,15 +143,25 @@ async function copyAssets(outputDir, config) {
   await fs.ensureDir(path.join(outputDir, 'assets', 'js'));
   await fs.ensureDir(path.join(outputDir, 'assets', 'images', 'social'));
   
-  // Copy blog-specific assets
-  const blogStyleSource = path.join(__dirname, 'src', 'assets', 'css', 'blog-style.css');
-  const blogStyleDest = path.join(outputDir, 'css', 'blog-style.css');
-  await fs.copy(blogStyleSource, blogStyleDest);
-
-  // Copy social icons CSS
-  const socialIconsStyleSource = path.join(__dirname, 'src', 'assets', 'css', 'social-icons.css');
-  const socialIconsStyleDest = path.join(outputDir, 'css', 'social-icons.css');
-  await fs.copy(socialIconsStyleSource, socialIconsStyleDest);
+  // Copy all CSS files from src/assets/css
+  const cssSourceDir = path.join(__dirname, 'src', 'assets', 'css');
+  const cssDestDir = path.join(outputDir, 'css');
+  
+  try {
+    // Copy all CSS files
+    const cssFiles = await fs.readdir(cssSourceDir);
+    for (const file of cssFiles) {
+      if (file.endsWith('.css')) {
+        await fs.copy(
+          path.join(cssSourceDir, file),
+          path.join(cssDestDir, file)
+        );
+        console.log(`Copied CSS file: ${file}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error copying CSS files:', error);
+  }
 
   // Copy social icons
   const socialIconsSource = path.join(__dirname, 'src', 'assets', 'images', 'social');
