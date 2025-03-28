@@ -3,9 +3,11 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{#if balise_title}}{{balise_title}}{{else}}{{titre}} - Padmeduc{{/if}}</title>
+    <title>{{#if balise_title}}{{balise_title}}{{else}}{{titre}} - {{getConfig "site.company_name"}}{{/if}}</title>
     <meta name="description" content="{{#if meta_description}}{{meta_description}}{{else}}{{resume}}{{/if}}">
     <link rel="stylesheet" href="/css/blog-style.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <meta property="og:title" content="{{titre}}">
     <meta property="og:description" content="{{resume}}">
     <meta property="og:image" content="{{photo_article}}">
@@ -15,7 +17,7 @@
   <body>
     <header class="site-header">
       <nav class="main-nav">
-        <a href="/" class="logo">Padmeduc</a>
+        <a href="/" class="logo">{{getConfig "site.company_name"}}</a>
         <div class="nav-links">
           <a href="/blog.html">Blog</a>
           <a href="/a-propos.html">À propos</a>
@@ -34,7 +36,9 @@
               <div class="author-meta">
                 <div class="author-name-follow">
                   <span class="author-name">{{auteur}}</span>
+                  {{#if showAuthorBio}}
                   <a href="#" class="follow-button">Follow</a>
+                  {{/if}}
                 </div>
                 <div class="post-meta-details">
                   <span class="read-time">{{duree_lecture}} min read</span>
@@ -43,14 +47,15 @@
                 </div>
               </div>
             </div>
+            {{#if showSocialShare}}
             <div class="share-buttons">
-              <button onclick="share('twitter')" aria-label="Partager sur Twitter">
-                Partager sur Twitter
-              </button>
-              <button onclick="share('linkedin')" aria-label="Partager sur LinkedIn">
-                Partager sur LinkedIn
-              </button>
+              {{#each social}}
+                <button onclick="share('{{@key}}')" aria-label="Share on {{@key}}">
+                  {{{socialIcon @key}}} Share
+                </button>
+              {{/each}}
             </div>
+            {{/if}}
           </div>
         </header>
 
@@ -65,6 +70,7 @@
         </div>
 
         <footer class="article-footer">
+          {{#if showAuthorBio}}
           <div class="author-bio">
             <div class="author-bio-header">
               <img src="{{photo_auteur}}" alt="{{auteur}}" class="author-bio-avatar">
@@ -73,17 +79,18 @@
                 <a href="#" class="follow-button">Follow</a>
               </div>
             </div>
-            <p class="author-bio-text">Data Engineer passionné par l'optimisation des systèmes et le partage de connaissances.</p>
+            <p class="author-bio-text">{{getConfig "site.author.bio"}}</p>
           </div>
+          {{/if}}
 
           <div class="article-tags">
-            <span class="tag">Data Engineering</span>
-            <span class="tag">Tech</span>
+            <span class="tag">{{getConfig "site.tagline"}}</span>
           </div>
         </footer>
       </div>
     </article>
 
+    {{#if config.blog.showRecentPosts}}
     <section class="recent-posts">
       <div class="recent-posts-container">
         <h2 class="recent-posts-title">Articles récents</h2>
@@ -109,24 +116,27 @@
         </div>
       </div>
     </section>
+    {{/if}}
 
     <footer class="site-footer">
       <div class="footer-content">
         <div class="footer-section">
-          <h3>À propos de Padmeduc</h3>
-          <p>Blog dédié au Data Engineering et à l'Intelligence Artificielle, partageant expertise et bonnes pratiques.</p>
+          <h3>À propos de {{getConfig "site.company_name"}}</h3>
+          <p>{{getConfig "site.description"}}</p>
         </div>
         <div class="footer-section">
           <h3>Suivez-nous</h3>
           <div class="social-links">
-            <a href="https://twitter.com/padmeduc" target="_blank" rel="noopener">Twitter</a>
-            <a href="https://linkedin.com/company/padmeduc" target="_blank" rel="noopener">LinkedIn</a>
-            <a href="https://github.com/padmeduc" target="_blank" rel="noopener">GitHub</a>
+            {{#each social}}
+              <a href="{{this}}" target="_blank" rel="noopener">
+                {{{socialIcon @key}}} {{@key}}
+              </a>
+            {{/each}}
           </div>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2024 Padmeduc. Tous droits réservés.</p>
+        <p>&copy; {{getConfig "site.company_name"}} {{currentYear}}. Tous droits réservés.</p>
       </div>
     </footer>
 
@@ -183,7 +193,10 @@
         
         const shareUrls = {
           twitter: `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
-          linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`
+          linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+          facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+          github: `https://github.com/`,
+          instagram: `https://instagram.com/`
         };
         
         window.open(shareUrls[platform], '_blank');

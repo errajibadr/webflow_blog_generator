@@ -1,14 +1,23 @@
 {
     "site": {
         "title": "Blog Test Local",
+        "company_name": "My Company",
         "description": "Blog de test pour vérification locale",
+        "tagline": "Technology & Innovation",
+        "author": {
+            "name": "John Doe",
+            "bio": "Technology enthusiast and writer",
+            "photo": "/images/author.jpg"
+        },
         "logo": "/images/logo.png",
         "favicon": "/images/favicon.ico"
     },
     "social": {
+        "instagram": "https://instagram.com/test",
         "facebook": "https://facebook.com/test",
         "twitter": "https://twitter.com/test",
-        "linkedin": "https://linkedin.com/in/test"
+        "linkedin": "https://linkedin.com/in/test",
+        "github": "https://github.com/test"
     },
     "contact": {
         "email": "test@example.com",
@@ -19,5 +28,18 @@
         "defaultDescription": "Blog de test pour vérification locale",
         "defaultImage": "/images/default-share.jpg",
         "googleAnalyticsId": ""
+    },
+    "ui": {
+        "primaryColor": "#1a8917",
+        "headerBackground": "#F8F4E9",
+        "textColor": "#292929",
+        "linkColor": "#1a8917"
+    },
+    "blog": {
+        "postsPerPage": 10,
+        "showAuthorBio": true,
+        "showSocialShare": true,
+        "showRecentPosts": true,
+        "recentPostsCount": 3
     }
 } 

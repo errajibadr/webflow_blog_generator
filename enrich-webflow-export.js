@@ -63,6 +63,56 @@ function truncateText(text, maxLength = 120) {
 // Register Handlebars helpers
 Handlebars.registerHelper('formatDate', formatDate);
 Handlebars.registerHelper('truncate', truncateText);
+Handlebars.registerHelper('currentYear', function() {
+  return new Date().getFullYear();
+});
+
+// Helper for comparing values
+Handlebars.registerHelper('eq', function(a, b) {
+  return a === b;
+});
+
+// Helper to check if value exists and is not empty
+Handlebars.registerHelper('hasValue', function(value) {
+  return value && value.trim && value.trim() !== '';
+});
+
+// Helper to get config value
+Handlebars.registerHelper('getConfig', function(path) {
+  const parts = path.split('.');
+  let value = this.config;
+  for (const part of parts) {
+    if (value && value[part]) {
+      value = value[part];
+    } else {
+      return '';
+    }
+  }
+  return value;
+});
+
+// Helper for social media icons
+Handlebars.registerHelper('socialIcon', function(platform) {
+  const iconPaths = {
+    facebook: path.join(__dirname, 'src', 'assets', 'images', 'social', 'facebook.svg'),
+    twitter: path.join(__dirname, 'src', 'assets', 'images', 'social', 'twitter.svg'),
+    linkedin: path.join(__dirname, 'src', 'assets', 'images', 'social', 'linkedin.svg'),
+    instagram: path.join(__dirname, 'src', 'assets', 'images', 'social', 'instagram.svg'),
+    github: path.join(__dirname, 'src', 'assets', 'images', 'social', 'github.svg')
+  };
+
+  if (!iconPaths[platform]) {
+    return '';
+  }
+
+  try {
+    const svgContent = fs.readFileSync(iconPaths[platform], 'utf-8');
+    return new Handlebars.SafeString(svgContent);
+  } catch (error) {
+    console.error(`Error loading social icon for ${platform}:`, error);
+    return '';
+  }
+});
 
 // Helper function to read and parse CSV file
 async function readCsvFile(filePath) {
@@ -87,15 +137,37 @@ async function readTemplate(templatePath) {
 }
 
 // Copy assets to output directory
-async function copyAssets(outputDir) {
+async function copyAssets(outputDir, config) {
   // Create assets directory structure
   await fs.ensureDir(path.join(outputDir, 'css'));
   await fs.ensureDir(path.join(outputDir, 'assets', 'js'));
+  await fs.ensureDir(path.join(outputDir, 'assets', 'images', 'social'));
   
   // Copy blog-specific assets
   const blogStyleSource = path.join(__dirname, 'src', 'assets', 'css', 'blog-style.css');
   const blogStyleDest = path.join(outputDir, 'css', 'blog-style.css');
   await fs.copy(blogStyleSource, blogStyleDest);
+
+  // Copy social icons CSS
+  const socialIconsStyleSource = path.join(__dirname, 'src', 'assets', 'css', 'social-icons.css');
+  const socialIconsStyleDest = path.join(outputDir, 'css', 'social-icons.css');
+  await fs.copy(socialIconsStyleSource, socialIconsStyleDest);
+
+  // Copy social icons
+  const socialIconsSource = path.join(__dirname, 'src', 'assets', 'images', 'social');
+  const socialIconsDest = path.join(outputDir, 'assets', 'images', 'social');
+  await fs.copy(socialIconsSource, socialIconsDest);
+
+  // Generate dynamic CSS with theme colors
+  const dynamicCss = `
+    :root {
+      --primary-color: ${config.ui.primaryColor};
+      --header-background: ${config.ui.headerBackground};
+      --text-color: ${config.ui.textColor};
+      --link-color: ${config.ui.linkColor};
+    }
+  `;
+  await fs.writeFile(path.join(outputDir, 'css', 'theme.css'), dynamicCss);
 
   // Copy JS files
   const jsSource = path.join(__dirname, 'src', 'assets', 'js');
@@ -108,6 +180,7 @@ async function generateBlogListing(posts, config, outputDir) {
   const template = await readTemplate(path.join(__dirname, 'src', 'templates', 'blog.html'));
   
   const templateData = {
+    config,
     posts: posts.map(post => ({
       titre: post['Titre'],
       resume: post['Résumé de l\'article'],
@@ -116,7 +189,9 @@ async function generateBlogListing(posts, config, outputDir) {
       duree_lecture: post['Durée de lecture'],
       photo_article: post['photo article'],
       slug: post['Slug']
-    }))
+    })),
+    site: config.site,
+    social: config.social
   };
 
   const html = template(templateData);
@@ -137,31 +212,37 @@ async function generateBlogPosts(posts, config, outputDir) {
   
   for (const post of posts) {
     // Get recent posts (excluding current post)
-    const recentPosts = posts
-      .filter(p => p['Slug'] !== post['Slug'])
-      .slice(0, 3)
-      .map(p => ({
-        titre: p['Titre'],
-        auteur: p['auteur'],
-        date_publication: formatDate(p['Date de publication']),
-        photo_article: p['photo article'],
-        slug: p['Slug'],
-        resume: truncateText(p['Résumé de l\'article'], 120)
-      }));
+    const recentPosts = config.blog.showRecentPosts ? 
+      posts
+        .filter(p => p['Slug'] !== post['Slug'])
+        .slice(0, config.blog.recentPostsCount)
+        .map(p => ({
+          titre: p['Titre'],
+          auteur: p['auteur'],
+          date_publication: formatDate(p['Date de publication']),
+          photo_article: p['photo article'],
+          slug: p['Slug'],
+          resume: truncateText(p['Résumé de l\'article'], 120)
+        })) : [];
 
     // Prepare template data
     const templateData = {
+      config,
+      site: config.site,
+      social: config.social,
       titre: post['Titre'],
       resume: post['Résumé de l\'article'],
       auteur: post['auteur'],
-      photo_auteur: post['Photo auteur'],
+      photo_auteur: post['Photo auteur'] || config.site.author.photo,
       date_publication: formatDate(post['Date de publication']),
       duree_lecture: post['Durée de lecture'],
       photo_article: post['photo article'],
       contenu: post['Contenu article'],
-      balise_title: post['meta title'],
-      meta_description: post['meta description'],
-      recent_posts: recentPosts
+      balise_title: post['meta title'] || `${post['Titre']} - ${config.site.company_name}`,
+      meta_description: post['meta description'] || post['Résumé de l\'article'],
+      recent_posts: recentPosts,
+      showAuthorBio: config.blog.showAuthorBio,
+      showSocialShare: config.blog.showSocialShare
     };
     
     const html = template(templateData);
@@ -184,8 +265,8 @@ async function main() {
     const posts = await readCsvFile(argv.csv);
     const config = await readConfig(argv.config);
     
-    // Copy assets
-    await copyAssets(argv.output);
+    // Copy and generate assets
+    await copyAssets(argv.output, config);
     
     // Generate blog pages
     await generateBlogListing(posts, config, argv.output);

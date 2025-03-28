@@ -1,0 +1,102 @@
+/* Social Icons Styles */
+:root {
+  --social-icon-size: 24px;
+  --social-icon-spacing: 16px;
+  --social-icon-color: currentColor;
+  --social-icon-hover-color: var(--primary-color, #007bff);
+  --social-icon-bg: transparent;
+  --social-icon-hover-bg: rgba(255, 255, 255, 0.1);
+}
+
+/* Container for social icons */
+.social-icons {
+  display: flex;
+  gap: var(--social-icon-spacing);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+
+/* Individual social icon wrapper */
+.social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--social-icon-size);
+  height: var(--social-icon-size);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  position: relative;
+  text-decoration: none;
+  padding: 6px;
+}
+
+/* SVG icon styling */
+.social-icon svg {
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+  /* Default colors for each platform */
+  fill: currentColor;
+}
+
+/* Platform-specific colors */
+.social-icon.facebook svg { fill: #1877f2; }
+.social-icon.twitter svg { fill: #1da1f2; }
+.social-icon.linkedin svg { fill: #0077b5; }
+.social-icon.instagram svg { fill: #e4405f; }
+.social-icon.github svg { fill: #333333; }
+
+/* Light background specific styles */
+[data-theme="light"] .social-icon svg {
+  filter: drop-shadow(0px 0px 1px rgba(0, 0, 0, 0.3));
+}
+
+/* Dark background specific styles */
+[data-theme="dark"] .social-icon svg {
+  filter: drop-shadow(0px 0px 1px rgba(255, 255, 255, 0.3));
+}
+
+/* Hover effects */
+.social-icon:hover {
+  transform: translateY(-2px);
+  background-color: var(--social-icon-hover-bg);
+}
+
+.social-icon:hover svg {
+  transform: scale(1.1);
+}
+
+/* Individual platform colors on hover with increased brightness */
+.social-icon.facebook:hover svg { fill: #4293ff; }
+.social-icon.twitter:hover svg { fill: #4db5ff; }
+.social-icon.linkedin:hover svg { fill: #0091dd; }
+.social-icon.instagram:hover svg { fill: #ff5e7a; }
+.social-icon.github:hover svg { fill: #555555; }
+
+/* Accessibility */
+.social-icon:focus {
+  outline: 2px solid var(--social-icon-hover-color);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .social-icon svg {
+    forced-color-adjust: auto;
+  }
+}
+
+/* Footer specific styles */
+.footer-wrapper-3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--social-icon-spacing);
+  padding: 16px 0;
+}
+
+.footer-wrapper-3 .social-icons {
+  margin-left: auto;
+} 
