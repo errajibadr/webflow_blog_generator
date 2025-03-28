@@ -46,32 +46,29 @@ const argv = yargs(hideBin(process.argv))
 let defaultArticleImages = [];
 let currentImageIndex = 0;
 
-// Helper function to format dates
-function formatDate(dateString) {
-  if (!dateString) {
-    // Generate a random date from the last 4 days
-    const date = new Date();
-    const daysAgo = Math.floor(Math.random() * 4); // 0 to 3 days ago
-    date.setDate(date.getDate() - daysAgo);
-    return date.toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+// Helper function to parse French date format
+function parseFrenchDate(dateString) {
+  if (!dateString) return new Date();
+  
+  // Handle French date format (DD/MM/YYYY)
+  const parts = dateString.split('/');
+  if (parts.length === 3) {
+    // Create date using YYYY, MM-1 (months are 0-based), DD
+    return new Date(parts[2], parts[1] - 1, parts[0]);
   }
   
+  // If not in French format, try standard date parsing
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
-    // If date is invalid, also generate random date
-    const fallbackDate = new Date();
-    const daysAgo = Math.floor(Math.random() * 4);
-    fallbackDate.setDate(fallbackDate.getDate() - daysAgo);
-    return fallbackDate.toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // If invalid date, return current date
+    return new Date();
   }
+  return date;
+}
+
+// Helper function to format dates
+function formatDate(dateString) {
+  const date = parseFrenchDate(dateString);
   
   return date.toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -230,27 +227,77 @@ async function readCsvFile(filePath, config) {
   return validPosts;
 }
 
-// New helper function to read all CSV files from a directory
-async function readAllCsvFiles(directoryPath, config) {
+// Helper function to read and parse JSON file
+async function readJsonFile(filePath, config) {
+  console.log(`\nReading JSON file: ${filePath}`);
+  const content = await fs.readFile(filePath, 'utf-8');
+  const posts = JSON.parse(content);
+  
+  // Ensure posts is an array
+  const postsArray = Array.isArray(posts) ? posts : [posts];
+  
+  // Validate required fields and filter out invalid posts
+  const validPosts = postsArray.filter((post, index) => {
+    if (!post['Titre'] || !post['Slug']) {
+      console.error(`Warning: Post #${index + 1} in ${path.basename(filePath)} is missing required Titre or Slug`);
+      return false;
+    }
+    return true;
+  }).map(post => ({
+    ...post,
+    // Use default author from config if none provided
+    auteur: post['auteur'] || config.site.author.name,
+    // Use next available dog picture if no article photo provided
+    'photo article': post['photo article'] || getNextDefaultImage()
+  }));
+
+  if (validPosts.length !== postsArray.length) {
+    console.warn(`Warning: ${postsArray.length - validPosts.length} posts were skipped due to missing Titre or Slug`);
+  }
+  
+  console.log(`Found ${validPosts.length} valid posts in file ${path.basename(filePath)}`);
+  console.log('Image distribution:', validPosts.map(post => path.basename(post['photo article'] || 'no-image')));
+  return validPosts;
+}
+
+// Helper function to read and parse any supported file (CSV or JSON)
+async function readPostsFile(filePath, config) {
+  const extension = path.extname(filePath).toLowerCase();
+  
+  switch (extension) {
+    case '.csv':
+      return readCsvFile(filePath, config);
+    case '.json':
+      return readJsonFile(filePath, config);
+    default:
+      throw new Error(`Unsupported file type: ${extension}`);
+  }
+}
+
+// Helper function to read all post files from a directory
+async function readAllPostFiles(directoryPath, config) {
   try {
-    console.log(`\n=== Reading CSV files from directory: ${directoryPath} ===`);
+    console.log(`\n=== Reading files from directory: ${directoryPath} ===`);
     const files = await fs.readdir(directoryPath);
-    console.log('Found files:', files.filter(file => file.toLowerCase().endsWith('.csv')));
+    const supportedFiles = files.filter(file => 
+      file.toLowerCase().endsWith('.csv') || 
+      file.toLowerCase().endsWith('.json')
+    );
     
-    const csvFiles = files.filter(file => file.toLowerCase().endsWith('.csv'));
+    console.log('Found files:', supportedFiles);
     
-    if (csvFiles.length === 0) {
-      throw new Error('No CSV files found in the specified directory');
+    if (supportedFiles.length === 0) {
+      throw new Error('No CSV or JSON files found in the specified directory');
     }
 
     const allPosts = [];
     let processedFiles = 0;
     
-    for (const file of csvFiles) {
+    for (const file of supportedFiles) {
       try {
         const filePath = path.join(directoryPath, file);
-        console.log(`\n=== Processing file ${++processedFiles}/${csvFiles.length}: ${file} ===`);
-        const posts = await readCsvFile(filePath, config);
+        console.log(`\n=== Processing file ${++processedFiles}/${supportedFiles.length}: ${file} ===`);
+        const posts = await readPostsFile(filePath, config);
         
         if (posts.length > 0) {
           console.log(`Adding ${posts.length} posts from ${file} to collection`);
@@ -265,7 +312,7 @@ async function readAllCsvFiles(directoryPath, config) {
     }
 
     if (allPosts.length === 0) {
-      throw new Error('No posts found in any CSV file');
+      throw new Error('No posts found in any file');
     }
 
     console.log('\n=== Final post collection summary ===');
@@ -273,7 +320,7 @@ async function readAllCsvFiles(directoryPath, config) {
 
     return allPosts;
   } catch (error) {
-    throw new Error(`Error reading CSV directory: ${error.message}`);
+    throw new Error(`Error reading directory: ${error.message}`);
   }
 }
 
@@ -362,7 +409,11 @@ async function generateBlogListing(posts, config, outputDir) {
   const template = await readTemplate(path.join(__dirname, 'src', 'templates', 'blog.html'));
   
   // Sort posts by date (most recent first)
-  posts.sort((a, b) => new Date(b['Date de publication']) - new Date(a['Date de publication']));
+  posts.sort((a, b) => {
+    const dateA = parseFrenchDate(a['Date de publication']);
+    const dateB = parseFrenchDate(b['Date de publication']);
+    return dateB - dateA; // Sort in descending order
+  });
   
   const templateData = {
     config,
@@ -394,7 +445,11 @@ async function generateBlogPosts(posts, config, outputDir) {
   await fs.ensureDir(blogDir);
   
   // Sort posts by date (most recent first)
-  posts.sort((a, b) => new Date(b['Date de publication']) - new Date(a['Date de publication']));
+  posts.sort((a, b) => {
+    const dateA = parseFrenchDate(a['Date de publication']);
+    const dateB = parseFrenchDate(b['Date de publication']);
+    return dateB - dateA; // Sort in descending order
+  });
   
   for (const post of posts) {
     // Get recent posts (excluding current post)
@@ -411,6 +466,21 @@ async function generateBlogPosts(posts, config, outputDir) {
           resume: truncateText(p['Résumé de l\'article'], 120)
         })) : [];
 
+    // Collect all non-empty article types
+    const articleTypes = [];
+    for (let i = 1; i <= 8; i++) {
+      const typeKey = i === 1 ? "Type d'article" : `Type d'article ${i}`;
+      if (post[typeKey] && post[typeKey].trim()) {
+        articleTypes.push(post[typeKey].trim());
+      }
+    }
+
+    // Replace {{cta_link}} in article content with the actual CTA link
+    let processedContent = post['Contenu article'];
+    if (config.site.cta_link && processedContent) {
+      processedContent = processedContent.replace(/\{\{cta_link\}\}/g, config.site.cta_link);
+    }
+
     // Prepare template data
     const templateData = {
       config,
@@ -423,12 +493,13 @@ async function generateBlogPosts(posts, config, outputDir) {
       date_publication: formatDate(post['Date de publication']),
       duree_lecture: post['Durée de lecture'],
       photo_article: post['photo article'],
-      contenu: post['Contenu article'],
+      contenu: processedContent, // Use the processed content
       balise_title: post['meta title'] || `${post['Titre']} - ${config.site.company_name}`,
       meta_description: post['meta description'] || post['Résumé de l\'article'],
       recent_posts: recentPosts,
       showAuthorBio: config.blog.showAuthorBio,
-      showSocialShare: config.blog.showSocialShare
+      showSocialShare: config.blog.showSocialShare,
+      article_types: articleTypes
     };
     
     const html = template(templateData);
@@ -447,16 +518,16 @@ async function main() {
     // Copy Webflow export
     await fs.copy(argv.export, argv.output);
     
-    // Read config first so we can use it during CSV processing
+    // Read config first so we can use it during processing
     const config = await readConfig(argv.config);
     
-    // Copy default article images before processing CSVs
+    // Copy default article images before processing files
     await copyDogPictures(argv.output);
     
-    // Read blog data and config
-    console.log('\n=== Starting CSV Processing ===');
-    const posts = await readAllCsvFiles(argv.csv, config);
-    console.log('=== CSV Processing Complete ===\n');
+    // Read blog data
+    console.log('\n=== Starting Post Processing ===');
+    const posts = await readAllPostFiles(argv.csv, config);
+    console.log('=== Post Processing Complete ===\n');
     
     console.log('\n=== Starting Blog Generation ===');
     // Copy and generate assets

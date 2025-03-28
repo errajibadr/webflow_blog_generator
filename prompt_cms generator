@@ -1,7 +1,7 @@
-Génère un article SEO optimisé au format CSV avec les spécifications suivantes :
+Génère un article SEO optimisé au format JSON avec les spécifications suivantes :
 
 INSTRUCTIONS TECHNIQUES :
-1. Format CSV avec toutes les colonnes encadrées par des guillemets doubles ("")
+1. Format JSON 
 2. Structure HTML complète pour la colonne "Contenu article" avec balises correctement échappées (guillemets doublés)
 3. Optimisation E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness)
 4. Durée de lecture entre 6-8 minutes
@@ -17,14 +17,18 @@ STRUCTURE DE CONTENU :
 - 3 sections principales  maximum (H2) avec sous-sections (H3)
 - Inclure au moins une liste à puces
 - Inclure au moins une citation en blockquote
-- Conclusion avec CTA
+- Conclusion avec CTA, le cta doit être un placeHolder {{cta_link}}
 - Optimisation pour les featured snippets
 - Ne remplis pas les champs que tu ne connais pas!
 
-FORMAT CSV ATTENDU :
-Name;Slug;Collection ID;Locale ID;Item ID;Created On;Updated On;Published On;Titre;auteur;Date de publication;Durée de lecture;Top article;Top 3articles;Derniers articles;Table des matières;Contenu article;articles similaires;Type d'article;Type d'article 2;Type d'article 3;Type d'article 4;type article 5;Type d'article 6;Type d'article 7;Type d'article 8;Photo auteur;photo article;Résumé de l'article;Balise title;META DESCRIPTION
+FORMAT JSON ATTENDU :
+Name;Slug;Titre;auteur;Date de publication;Durée de lecture;Table des matières;Contenu article;Type d'article;Type d'article 2;Type d'article 3;Type d'article 4;type article 5;Type d'article 6;Type d'article 7;Type d'article 8;Photo auteur;photo article;Résumé de l'article;Balise title;META DESCRIPTION
 
 Tu n'as pas besoin de remplir les informations que tu ne connais pas, du type auteur, photo auteur.
+
+Adding proper line breaks using \n\n between HTML sections
+Escaping quotes in the content using \\" for nested quotes
+Maintaining proper JSON string formatting throughout the content
 
 IMPORTANT : Optimise pour les dernières tendances SEO 2025 incluant :
 - Réponse directe aux questions de recherche (Answer Engine Optimization)

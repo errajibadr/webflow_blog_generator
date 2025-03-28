@@ -10,7 +10,8 @@
             "photo": "src/assets/images/author.webp"
         },
         "logo": "/images/logo.png",
-        "favicon": "/images/favicon.ico"
+        "favicon": "/images/favicon.ico",
+        "cta_link": "https://example.com/contact"
     },
     "social": {
         "instagram": "https://instagram.com/test",

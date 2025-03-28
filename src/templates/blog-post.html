@@ -73,7 +73,7 @@
               <img src="{{photo_auteur}}" alt="{{auteur}}" class="author-bio-avatar">
               <div class="author-bio-info">
                 <h3 class="author-bio-name">{{auteur}}</h3>
-                <a href="#" class="follow-button">Follow</a>
+                <a href="{{getConfig "site.cta_link"}}" class="follow-button">Follow</a>
               </div>
             </div>
             <p class="author-bio-text">{{getConfig "site.author.bio"}}</p>
@@ -81,8 +81,19 @@
           {{/if}}
 
           <div class="article-tags">
-            <span class="tag">{{getConfig "site.tagline"}}</span>
+            {{#if article_types.length}}
+              {{#each article_types}}
+                <span class="tag article-type">{{this}}</span>
+              {{/each}}
+            {{/if}}
+            <span class="tag tagline">{{getConfig "site.tagline"}}</span>
           </div>
+          
+          {{#if (getConfig "site.cta_link")}}
+          <div class="article-cta">
+            <a href="{{getConfig "site.cta_link"}}" class="cta-button">En savoir plus</a>
+          </div>
+          {{/if}}
         </footer>
       </div>
     </article>

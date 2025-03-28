@@ -1,5 +1,3 @@
-
-
 .heading-36 {
   margin-top: 58px;
   font-size: 23px;
@@ -1657,11 +1655,101 @@
   }
 }
 
-
 @font-face {
   font-family: 'Plus Jakarta Sans';
   src: url('../fonts/PlusJakartaSans-VariableFont_wght.ttf') format('truetype');
   font-weight: 200 800;
   font-style: normal;
   font-display: swap;
+}
+
+.article-types {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.article-types h4 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.article-types-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.article-type {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  border-radius: 2rem;
+  font-size: 0.9rem;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.article-type:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.tag.article-type {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.tag.article-type:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.tag.tagline {
+  background-color: var(--primary-color, #00b874);
+  color: white;
+}
+
+.tag.tagline:hover {
+  opacity: 0.9;
+}
+
+.article-cta {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background-color: var(--primary-color, #1a8917);
+  color: white;
+  text-decoration: none;
+  border-radius: 2rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cta-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
