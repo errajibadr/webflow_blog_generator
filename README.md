@@ -19,9 +19,12 @@ npm install
 ## Structure des fichiers
 
 ```
-src/
+votre-projet/
 ├── data/
 │   └── blog_posts.csv     # Articles de blog au format CSV
+├── templates/
+│   ├── blog.html         # Template de la page d'index du blog
+│   └── blog-post.html    # Template des pages d'articles
 ├── templates/
 │   ├── blog.html         # Template de la page d'index du blog
 │   └── blog-post.html    # Template des pages d'articles

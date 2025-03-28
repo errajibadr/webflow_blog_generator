@@ -15,7 +15,8 @@
     "csv-parse": "^5.5.3",
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
-    "handlebars": "^4.7.8"
+    "handlebars": "^4.7.8",
+    "http-server": "^14.1.1"
   },
   "keywords": [
     "webflow",
@@ -25,4 +26,4 @@
   ],
   "author": "",
   "license": "ISC"
-} 
+}
