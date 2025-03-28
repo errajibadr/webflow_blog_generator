@@ -1,0 +1,23 @@
+{
+    "site": {
+        "title": "Mon Blog",
+        "description": "Description de mon blog",
+        "logo": "/images/logo.png",
+        "favicon": "/images/favicon.ico"
+    },
+    "social": {
+        "facebook": "https://facebook.com/monblog",
+        "twitter": "https://twitter.com/monblog",
+        "linkedin": "https://linkedin.com/company/monblog"
+    },
+    "contact": {
+        "email": "contact@monblog.com",
+        "phone": "+33 1 23 45 67 89"
+    },
+    "seo": {
+        "defaultTitle": "Mon Blog - Articles et actualités",
+        "defaultDescription": "Découvrez nos articles sur [votre thématique]",
+        "defaultImage": "/images/default-share.jpg",
+        "googleAnalyticsId": "UA-XXXXXXXX-X"
+    }
+} 

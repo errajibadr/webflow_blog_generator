@@ -1,0 +1,23 @@
+{
+    "site": {
+        "title": "Blog Test Local",
+        "description": "Blog de test pour vérification locale",
+        "logo": "/images/logo.png",
+        "favicon": "/images/favicon.ico"
+    },
+    "social": {
+        "facebook": "https://facebook.com/test",
+        "twitter": "https://twitter.com/test",
+        "linkedin": "https://linkedin.com/in/test"
+    },
+    "contact": {
+        "email": "test@example.com",
+        "phone": "+33 1 23 45 67 89"
+    },
+    "seo": {
+        "defaultTitle": "Blog Test - Articles",
+        "defaultDescription": "Blog de test pour vérification locale",
+        "defaultImage": "/images/default-share.jpg",
+        "googleAnalyticsId": ""
+    }
+} 

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{#if balise_title}}{{balise_title}}{{else}}{{titre}} - Padmeduc{{/if}}</title>
+    <meta name="description" content="{{#if meta_description}}{{meta_description}}{{else}}{{resume}}{{/if}}">
+    <link rel="stylesheet" href="/css/blog-style.css">
+    <meta property="og:title" content="{{titre}}">
+    <meta property="og:description" content="{{resume}}">
+    <meta property="og:image" content="{{photo_article}}">
+    <meta property="og:type" content="article">
+    <meta name="author" content="{{auteur}}">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="main-nav">
+        <a href="/" class="logo">Padmeduc</a>
+        <div class="nav-links">
+          <a href="/blog.html">Blog</a>
+          <a href="/a-propos.html">À propos</a>
+          <a href="/contact.html">Contact</a>
+        </div>
+      </nav>
+    </header>
+
+    <article class="article-container">
+      <div class="article-content">
+        <header class="article-header">
+          <h1 class="article-title">{{titre}}</h1>
+          <div class="article-meta">
+            <div class="author-info">
+              <img src="{{photo_auteur}}" alt="{{auteur}}" class="author-avatar">
+              <div class="author-meta">
+                <div class="author-name-follow">
+                  <span class="author-name">{{auteur}}</span>
+                  <a href="#" class="follow-button">Follow</a>
+                </div>
+                <div class="post-meta-details">
+                  <span class="read-time">{{duree_lecture}} min read</span>
+                  <span class="meta-separator">·</span>
+                  <span class="post-date">{{date_publication}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="share-buttons">
+              <button onclick="share('twitter')" aria-label="Partager sur Twitter">
+                Partager sur Twitter
+              </button>
+              <button onclick="share('linkedin')" aria-label="Partager sur LinkedIn">
+                Partager sur LinkedIn
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {{#if photo_article}}
+        <figure class="article-hero-image">
+          <img src="{{photo_article}}" alt="{{titre}}" loading="lazy" onload="checkImageRatio(this)">
+        </figure>
+        {{/if}}
+
+        <div class="article-body">
+          {{{contenu}}}
+        </div>
+
+        <footer class="article-footer">
+          <div class="author-bio">
+            <div class="author-bio-header">
+              <img src="{{photo_auteur}}" alt="{{auteur}}" class="author-bio-avatar">
+              <div class="author-bio-info">
+                <h3 class="author-bio-name">{{auteur}}</h3>
+                <a href="#" class="follow-button">Follow</a>
+              </div>
+            </div>
+            <p class="author-bio-text">Data Engineer passionné par l'optimisation des systèmes et le partage de connaissances.</p>
+          </div>
+
+          <div class="article-tags">
+            <span class="tag">Data Engineering</span>
+            <span class="tag">Tech</span>
+          </div>
+        </footer>
+      </div>
+    </article>
+
+    <section class="recent-posts">
+      <div class="recent-posts-container">
+        <h2 class="recent-posts-title">Articles récents</h2>
+        <div class="recent-posts-grid">
+          {{#each recent_posts}}
+          <article class="recent-post-card">
+            {{#if photo_article}}
+            <div class="recent-post-image">
+              <img src="{{photo_article}}" alt="{{titre}}" loading="lazy">
+            </div>
+            {{/if}}
+            <div class="recent-post-content">
+              <h3 class="recent-post-title"><a href="/blog/{{slug}}.html">{{titre}}</a></h3>
+              <p class="recent-post-excerpt">{{resume}}</p>
+              <div class="recent-post-meta">
+                <span class="recent-post-author">{{auteur}}</span>
+                <span class="meta-separator">·</span>
+                <span class="recent-post-date">{{date_publication}}</span>
+              </div>
+            </div>
+          </article>
+          {{/each}}
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>À propos de Padmeduc</h3>
+          <p>Blog dédié au Data Engineering et à l'Intelligence Artificielle, partageant expertise et bonnes pratiques.</p>
+        </div>
+        <div class="footer-section">
+          <h3>Suivez-nous</h3>
+          <div class="social-links">
+            <a href="https://twitter.com/padmeduc" target="_blank" rel="noopener">Twitter</a>
+            <a href="https://linkedin.com/company/padmeduc" target="_blank" rel="noopener">LinkedIn</a>
+            <a href="https://github.com/padmeduc" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 Padmeduc. Tous droits réservés.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Fonction pour vérifier le ratio de l'image hero
+      function checkImageRatio(img) {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        const figure = img.parentElement;
+        
+        // Si le ratio est proche de 16:9 (avec une marge de tolérance)
+        if (ratio >= 1.7 && ratio <= 1.8) {
+          figure.classList.add('hero-wide');
+        }
+      }
+
+      // Script pour gérer les images dans le contenu
+      document.addEventListener('DOMContentLoaded', function() {
+        // Envelopper les images dans des figures
+        const articleBody = document.querySelector('.article-body');
+        const images = articleBody.querySelectorAll('img:not(.article-hero-image img)');
+        
+        images.forEach(img => {
+          // Ne pas traiter les images déjà dans des figures
+          if (img.parentElement.tagName !== 'FIGURE') {
+            const figure = document.createElement('figure');
+            img.parentElement.insertBefore(figure, img);
+            figure.appendChild(img);
+            
+            // Ajouter une légende si l'image a un attribut alt
+            if (img.alt) {
+              const figcaption = document.createElement('figcaption');
+              figcaption.textContent = img.alt;
+              figure.appendChild(figcaption);
+            }
+          }
+
+          // Ajouter la classe appropriée en fonction de la largeur naturelle de l'image
+          img.onload = function() {
+            const width = this.naturalWidth;
+            if (width <= 300) {
+              this.parentElement.classList.add('image-small');
+            } else if (width <= 500) {
+              this.parentElement.classList.add('image-medium');
+            } else {
+              this.parentElement.classList.add('image-large');
+            }
+          }
+        });
+      });
+
+      function share(platform) {
+        const url = encodeURIComponent(window.location.href);
+        const title = encodeURIComponent(document.title);
+        
+        const shareUrls = {
+          twitter: `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
+          linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`
+        };
+        
+        window.open(shareUrls[platform], '_blank');
+      }
+    </script>
+  </body>
+</html> 
