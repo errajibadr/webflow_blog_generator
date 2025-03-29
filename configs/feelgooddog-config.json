@@ -29,7 +29,8 @@
         "googleAnalyticsId": "G-XXXXXXXXXX"
     },
     "ui": {
-        "primaryColor": "##405335",
+        "backgroundColor": "#F8F4E9",
+        "primaryColor": "#405335",
         "headerBackground": "#F8F4E9",
         "textColor": "#292929",
         "linkColor": "#1a8917"

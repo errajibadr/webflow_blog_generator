@@ -552,14 +552,31 @@ async function generateBlogPosts(posts, config, outputDir) {
           resume: truncateText(p['Résumé de l\'article'], 120)
         })) : [];
 
-    // Collect all non-empty article types
-    const articleTypes = [];
+    // Collect all non-empty article types using a Set to eliminate duplicates
+    const articleTypesSet = new Set();
+    
+    // Add primary article types
     for (let i = 1; i <= 8; i++) {
       const typeKey = i === 1 ? "Type d'article" : `Type d'article ${i}`;
       if (post[typeKey] && post[typeKey].trim()) {
-        articleTypes.push(post[typeKey].trim());
+        articleTypesSet.add(post[typeKey].trim());
       }
     }
+
+    // Add secondary article types
+    const secondaryTypeKey = "Type d'article secondaire";
+    if (post[secondaryTypeKey] && post[secondaryTypeKey].trim()) {
+      const secondaryTypes = post[secondaryTypeKey].split(',');
+      secondaryTypes.forEach(type => {
+        const trimmedType = type.trim();
+        if (trimmedType) {
+          articleTypesSet.add(trimmedType);
+        }
+      });
+    }
+    
+    // Convert Set back to array for template use
+    const articleTypes = Array.from(articleTypesSet);
 
     // Replace {{cta_link}} in article content with the actual CTA link
     let processedContent = post['Contenu article'];
