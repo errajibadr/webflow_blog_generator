@@ -1,0 +1,44 @@
+{
+    "site": {
+        "title": "Feel Good Dog - Blog d'éducation canine",
+        "company_name": "Feel Good Dog",
+        "description": "Blog spécialisé en éducation canine et bien-être animal, conseils et astuces pour une relation harmonieuse avec votre chien",
+        "tagline": "Pour une relation harmonieuse avec votre compagnon à quatre pattes",
+        "author": {
+            "name": "Chrisland Bellivier",
+            "bio": "Éducateur canin, passionné par la relation entre les humains et leurs compagnons",
+            "photo": "src/assets/images/author_feelgooddog.avif"
+        },  
+        "logo": "/images/logo.png",
+        "favicon": "/images/favicon.ico",
+        "cta_link": "https://www.feelgooddog.fr/contact"
+    },
+    "social": {
+        "instagram": "https://instagram.com/feelgooddog",
+        "facebook": "https://facebook.com/feelgooddog",
+        "twitter": "https://twitter.com/feelgooddog"
+    },
+    "contact": {
+        "email": "chrisland.b@live.fr",
+        "phone": "+33 1 23 45 67 89"
+    },
+    "seo": {
+        "defaultTitle": "Feel Good Dog - Éducation canine et bien-être animal",
+        "defaultDescription": "Découvrez nos conseils d'éducation canine, astuces et méthodes positives pour une relation harmonieuse avec votre chien",
+        "defaultImage": "/images/default-share.jpg",
+        "googleAnalyticsId": "G-XXXXXXXXXX"
+    },
+    "ui": {
+        "primaryColor": "##405335",
+        "headerBackground": "#F8F4E9",
+        "textColor": "#292929",
+        "linkColor": "#1a8917"
+    },
+    "blog": {
+        "postsPerPage": 10,
+        "showAuthorBio": true,
+        "showSocialShare": true,
+        "showRecentPosts": true,
+        "recentPostsCount": 3
+    }
+}

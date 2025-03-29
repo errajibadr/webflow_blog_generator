@@ -1,3 +1,4 @@
+
 Génère un article SEO/GEO optimisé au format JSON avec les spécifications suivantes :
 
 INSTRUCTIONS TECHNIQUES :
@@ -85,7 +86,6 @@ FORMAT JSON REQUIS :
   "Slug": "string - URL optimisée SEO",
   "Date de publication": "string - Format DD/MM/YYYY",
   "Durée de lecture": "string - X minutes",
-  "Table des matières": "string - HTML avec ancres",
   "Contenu article": "string - HTML complet et structuré",
   "Type d'article": "string - Catégorie principale",
   "Type d'article 2-8": "string - Catégories secondaires",

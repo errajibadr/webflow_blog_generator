@@ -204,6 +204,38 @@ function isValidImageUrl(url) {
     const imagePath = path.join(argv.output, url);
     return fs.existsSync(imagePath);
   }
+  // Check if URL is a relative path discoverable from the current directory
+  // and copy it to the output directory if found
+  try {
+    // Try to resolve the image from the current directory or as a relative path
+    const possiblePaths = [
+      url, // As is
+      path.join(process.cwd(), url), // From current working directory
+      path.join(__dirname, url), // From script directory
+      path.join(__dirname, 'data', url) // From src directory
+    ];
+    
+    for (const sourcePath of possiblePaths) {
+      if (fs.existsSync(sourcePath)) {
+        console.log(`Found image at: ${sourcePath}`);
+        const filename = path.basename(sourcePath);
+        const destPath = path.join(argv.output, 'images', filename);
+        
+        // Create directory if it doesn't exist
+        fs.ensureDirSync(path.join(argv.output, 'images'));
+        
+        // Copy the file to the output directory
+        fs.copySync(sourcePath, destPath);
+        console.log(`Copied image to: ${destPath}`);
+        
+        // Return true since we found and copied the image
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error(`Error processing relative image path ${url}:`, error);
+  }
+  
   return false;
 }
 
@@ -228,6 +260,12 @@ function processArticleContent(content) {
         console.log(`Replacing with: ${newSrc}`);
         img.attr('src', newSrc);
       }
+    } else if (currentSrc && !currentSrc.startsWith('http') && !currentSrc.startsWith('/images/')) {
+      // If the image was found as a relative path, update the src to point to the copied image
+      const filename = path.basename(currentSrc);
+      const newSrc = `/images/${filename}`;
+      console.log(`Updating relative image path from ${currentSrc} to ${newSrc}`);
+      img.attr('src', newSrc);
     }
   });
 

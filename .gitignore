@@ -1,7 +1,9 @@
 node_modules
 
-dogtolib/
+websites/
 
 dist/
 
 .DS_Store
+
+data/
