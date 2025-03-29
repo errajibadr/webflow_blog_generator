@@ -1,0 +1,45 @@
+{
+    "site": {
+        "title": "DogtoLib - Blog sur la passion canine",
+        "company_name": "DogtoLib",
+        "description": "Blog spécialisé sur la passion canine, conseils et astuces pour une relation harmonieuse avec votre chien",
+        "tagline": "Pour une relation harmonieuse avec votre compagnon à quatre pattes",
+        "author": {
+            "name": "Passionné de chiens",
+            "bio": "Passionné de chiens, passionné par la relation entre les humains et leurs compagnons",
+            "photo": "src/assets/images/author_dogtolib.jpeg"
+        },  
+        "logo": "/images/logo.png",
+        "favicon": "/images/favicon.ico",
+        "cta_link": "https://www.dogtolib.fr/contact"
+    },
+    "social": {
+        "instagram": "https://instagram.com/dogtolib",
+        "facebook": "https://facebook.com/dogtolib",
+        "twitter": "https://twitter.com/dogtolib"
+    },
+    "contact": {
+        "email": "dogtolib@gmail.com",
+        "phone": "+33 1 23 45 67 89"
+    },
+    "seo": {
+        "defaultTitle": "DogtoLib - Blog sur la passion canine",
+        "defaultDescription": "Découvrez nos conseils sur la passion canine, astuces et méthodes positives pour une relation harmonieuse avec votre chien",
+        "defaultImage": "/images/default-share.jpg",
+        "googleAnalyticsId": "G-XXXXXXXXXX"
+    },
+    "ui": {
+        "backgroundColor": "#F8F4E9",
+        "primaryColor": "#405335",
+        "headerBackground": "#F8F4E9",
+        "textColor": "#292929",
+        "linkColor": "#1a8917"
+    },
+    "blog": {
+        "postsPerPage": 10,
+        "showAuthorBio": true,
+        "showSocialShare": true,
+        "showRecentPosts": true,
+        "recentPostsCount": 3
+    }
+}
