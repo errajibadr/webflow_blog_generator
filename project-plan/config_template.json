@@ -1,0 +1,53 @@
+{
+  "site": {
+    "name": "WEBSITE_NAME",
+    "url": "https://example.com",
+    "company_name": "Company Name",
+    "description": "Website description",
+    "author": {
+      "name": "Default Author",
+      "photo": "src/assets/images/author/default-author.jpg"
+    },
+    "cta_link": "https://example.com/contact"
+  },
+  "ui": {
+    "primaryColor": "#007bff",
+    "headerBackground": "#ffffff",
+    "textColor": "#333333",
+    "linkColor": "#007bff",
+    "backgroundColor": "#f8f9fa"
+  },
+  "blog": {
+    "showAuthorBio": true,
+    "showSocialShare": true,
+    "showRecentPosts": true,
+    "recentPostsCount": 3,
+    "blogIndexBackground": "src/assets/images/background/default-background.jpg"
+  },
+  "social": {
+    "facebook": "https://facebook.com/example",
+    "twitter": "https://twitter.com/example",
+    "linkedin": "https://linkedin.com/company/example",
+    "instagram": "https://instagram.com/example"
+  },
+  "hostinger": {
+    "apiKey": "YOUR_HOSTINGER_API_KEY",
+    "siteId": "your-site-id",
+    "ftpHost": "ftp.example.com",
+    "ftpUser": "username",
+    "ftpPassword": "password"
+  },
+  "blogGeneration": {
+    "topics": ["topic1", "topic2", "topic3"],
+    "frequency": "weekly",
+    "articlesPerBatch": 3,
+    "language": "en",
+    "inputDataFile": "data/topics.csv",
+    "aiParams": {
+      "maxConcurrent": 3,
+      "batchSize": 10,
+      "temperature": 0.7,
+      "model": "default"
+    }
+  }
+} 
