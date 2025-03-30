@@ -7,6 +7,7 @@ logging:
 paths:
   workspaces: workspaces  # Root directory for all website workspaces
   logs: logs
+  content_generator: "~/repository/seo_agent_generator/main.py"
 
 # Default settings for websites
 defaults:

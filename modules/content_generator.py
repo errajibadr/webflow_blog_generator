@@ -7,12 +7,10 @@ This module generates SEO content for websites based on configuration.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 
 def generate_content(config, website_name):
@@ -28,6 +26,11 @@ def generate_content(config, website_name):
     """
     logger = logging.getLogger("orchestrator.content_generator")
     website_config = config["website"]
+    content_executable = os.getenv(
+        "CONTENT_GENERATOR_EXECUTABLE", config["paths"]["content_generator"]
+    )
+    # Expand tilde in the path to handle home directory references
+    content_executable = os.path.expanduser(content_executable)
     content_config = website_config.get("content_generation", {})
 
     # Determine the workspace directory
@@ -57,11 +60,18 @@ def generate_content(config, website_name):
     logger.info(f"Batch size: {batch_size}")
     logger.info(f"Max concurrent: {max_concurrent}")
 
-    # Call the content generation script using UV
+    # Extract the directory from the content_executable path
+    content_executable_dir = os.path.dirname(content_executable)
+
+    # Call the content generation script using UV with project flag
     cmd = [
         "uv",
         "run",
-        "main.py",
+        # "--directory",
+        # content_executable_dir,  # Change to the directory containing the script
+        "--project",
+        content_executable_dir,  # Use the directory containing the script as the project directory
+        content_executable,
         "--input",
         topics_file,
         "--output",
@@ -71,6 +81,10 @@ def generate_content(config, website_name):
         "--max-concurrent",
         str(max_concurrent),
     ]
+
+    if content_config.get("local_seo") is not None:
+        cmd.append("--local-seo")
+        cmd.append(content_config.get("local_seo"))
 
     logger.info(f"Running content generation: {' '.join(cmd)}")
 

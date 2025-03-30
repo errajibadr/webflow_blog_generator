@@ -44,7 +44,7 @@ def export_website(config: Dict[str, Any], website_name: str) -> Path:
 
     try:
         # Get export method from config or use default priority order
-        export_method = website_config.get("export", {}).get("method", "auto")
+        export_method = website_config.get("export", {}).get("method", "ftp")
 
         if export_method == "ftp":
             success = _export_via_ftp(config, website_name, export_dir)
