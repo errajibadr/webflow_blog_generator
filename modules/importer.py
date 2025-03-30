@@ -13,7 +13,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 import ftputil
 import ftputil.error
@@ -37,22 +37,34 @@ def import_website(config: Dict[str, Any], website_name: str) -> bool:
     workspace_name = website_config["website"].get("workspace", website_name)
     workspace_dir = Path(config["paths"]["workspaces"]) / workspace_name
     output_dir = workspace_dir / "output"
+    content_dir = workspace_dir / "content"
 
     # Verify that output directory exists
     if not output_dir.exists():
         logger.error(f"Output directory does not exist: {output_dir}")
         raise FileNotFoundError(f"Output directory does not exist: {output_dir}")
 
-    logger.info(f"Importing website: {website_name} from {output_dir}")
+    # List of directories to import with their configuration
+    # (source_dir, preserve_parent_dir)
+    import_dirs = [(output_dir, False)]  # Don't preserve "output" in path
+
+    if content_dir.exists():
+        logger.info(f"Content directory found: {content_dir}, will import files from here as well")
+        # Preserve "content" directory in path structure
+        import_dirs.append((content_dir, True))
+
+    # Log the import source directories
+    source_dirs_str = ", ".join(str(d[0]) for d in import_dirs)
+    logger.info(f"Importing website: {website_name} from {source_dirs_str}")
 
     try:
         # Get import method from config or use default priority order
         import_method = website_config.get("import", {}).get("method", "ftp")
 
         if import_method == "ftp":
-            success = _import_via_ftp(config, website_name, output_dir)
+            success = _import_via_ftp(config, website_name, import_dirs)
         elif import_method == "simulate":
-            success = simulate_import(config, website_name)
+            success = simulate_import(config, website_name, [d[0] for d in import_dirs])
         else:
             logger.error(f"Unknown import method: {import_method}")
             return False
@@ -69,14 +81,18 @@ def import_website(config: Dict[str, Any], website_name: str) -> bool:
         raise RuntimeError(f"Failed to import website: {e}")
 
 
-def _import_via_ftp(config: Dict[str, Any], website_name: str, output_dir: Path) -> bool:
+def _import_via_ftp(
+    config: Dict[str, Any], website_name: str, source_dirs: List[Tuple[Path, bool]]
+) -> bool:
     """
     Import a website to Hostinger using FTP.
 
     Args:
         config: The loaded configuration
         website_name: Name of the website to import
-        output_dir: Directory with files to import
+        source_dirs: List of tuples containing (directory_path, preserve_parent_dir_flag)
+                    When preserve_parent_dir_flag is True, the parent directory name will be
+                    preserved in the remote path
 
     Returns:
         True if successful, False otherwise
@@ -106,48 +122,69 @@ def _import_via_ftp(config: Dict[str, Any], website_name: str, output_dir: Path)
             dir_count = 0
             skipped_count = 0
 
-            # Walk the local directory structure
-            for dirpath, dirnames, filenames in os.walk(output_dir):
-                # Create the corresponding remote path
-                rel_path = os.path.relpath(dirpath, output_dir)
-                remote_path = os.path.join(remote_dir, rel_path) if rel_path != "." else remote_dir
+            # Process each source directory
+            for source_dir, preserve_parent in source_dirs:
+                source_name = source_dir.name if preserve_parent else ""
+                logger.info(
+                    f"Processing source directory: {source_dir}{' (preserving directory name)' if preserve_parent else ''}"
+                )
 
-                # Ensure the remote directory exists
-                if rel_path != "." and not ftp_host.path.exists(remote_path):
-                    logger.debug(f"Creating remote directory: {remote_path}")
-                    ftp_host.makedirs(remote_path)
-                    dir_count += 1
-                elif rel_path != ".":
-                    dir_count += 1
+                # Walk the local directory structure
+                for dirpath, dirnames, filenames in os.walk(source_dir):
+                    # Create the corresponding remote path
+                    rel_path = os.path.relpath(dirpath, source_dir)
 
-                if dir_count <= 5:  # Only show first 5 directories in debug mode
-                    logger.debug(f"Processing directory: {dirpath}")
+                    # If we're preserving the parent directory name and this is not the root
+                    # of the source directory, include it in the path
+                    if preserve_parent:
+                        if rel_path == ".":
+                            # For the root of source_dir, use just the directory name
+                            remote_path = os.path.join(remote_dir, source_name)
+                        else:
+                            # For subdirectories, include both source_name and relative path
+                            remote_path = os.path.join(remote_dir, source_name, rel_path)
+                    else:
+                        # Standard behavior without preserving parent
+                        remote_path = (
+                            os.path.join(remote_dir, rel_path) if rel_path != "." else remote_dir
+                        )
 
-                # Upload each file
-                for filename in filenames:
-                    local_file = os.path.join(dirpath, filename)
-                    remote_file = os.path.join(remote_path, filename)
+                    # Ensure the remote directory exists
+                    if not ftp_host.path.exists(remote_path):
+                        logger.debug(f"Creating remote directory: {remote_path}")
+                        ftp_host.makedirs(remote_path)
+                        dir_count += 1
+                    elif remote_path != remote_dir:  # Don't count the root remote dir
+                        dir_count += 1
 
-                    # Check if file exists and is older (need to upload)
-                    update_file = True
-                    if ftp_host.path.exists(remote_file):
-                        local_time = os.path.getmtime(local_file)
-                        try:
-                            remote_time = ftp_host.path.getmtime(remote_file)
-                            if remote_time >= local_time:
-                                if skipped_count < 5:  # Limit log entries
-                                    logger.debug(f"Skipping (up to date): {remote_file}")
-                                skipped_count += 1
-                                update_file = False
-                        except ftputil.error.FTPOSError:
-                            # If we can't get the mtime, we should upload
-                            logger.debug(f"Could not get mtime for {remote_file}, will upload")
+                    if dir_count <= 5:  # Only show first 5 directories in debug mode
+                        logger.debug(f"Processing directory: {dirpath} -> {remote_path}")
 
-                    if update_file:
-                        if file_count < 10:  # Only show first 10 files in debug mode
-                            logger.debug(f"Uploading: {local_file} -> {remote_file}")
-                        file_count += 1
-                        ftp_host.upload(local_file, remote_file)
+                    # Upload each file
+                    for filename in filenames:
+                        local_file = os.path.join(dirpath, filename)
+                        remote_file = os.path.join(remote_path, filename)
+
+                        # Check if file exists and is older (need to upload)
+                        update_file = True
+                        if ftp_host.path.exists(remote_file):
+                            local_time = os.path.getmtime(local_file)
+                            try:
+                                remote_time = ftp_host.path.getmtime(remote_file)
+                                if remote_time >= local_time:
+                                    if skipped_count < 5:  # Limit log entries
+                                        logger.debug(f"Skipping (up to date): {remote_file}")
+                                    skipped_count += 1
+                                    update_file = False
+                            except ftputil.error.FTPOSError:
+                                # If we can't get the mtime, we should upload
+                                logger.debug(f"Could not get mtime for {remote_file}, will upload")
+
+                        if update_file:
+                            if file_count < 10:  # Only show first 10 files in debug mode
+                                logger.debug(f"Uploading: {local_file} -> {remote_file}")
+                            file_count += 1
+                            ftp_host.upload(local_file, remote_file)
 
             # Log summary
             logger.info("FTP import completed successfully:")
@@ -163,30 +200,38 @@ def _import_via_ftp(config: Dict[str, Any], website_name: str, output_dir: Path)
 
 
 # For development/testing purposes
-def simulate_import(config: Dict[str, Any], website_name: str) -> bool:
+def simulate_import(
+    config: Dict[str, Any], website_name: str, source_dirs: Optional[List[Path]] = None
+) -> bool:
     """
     Simulate a website import for development purposes.
 
     Args:
         config: The loaded configuration
         website_name: Name of the website to import
+        source_dirs: List of directories with files to import (optional)
 
     Returns:
         True if successful
     """
     logger = logging.getLogger("orchestrator.importer")
 
-    # Determine the workspace directory
-    workspace_name = config["website"]["website"].get("workspace", website_name)
-    workspace_dir = Path(config["paths"]["workspaces"]) / workspace_name
-    output_dir = workspace_dir / "output"
+    # Determine the workspace directory if source_dirs not provided
+    if source_dirs is None:
+        workspace_name = config["website"]["website"].get("workspace", website_name)
+        workspace_dir = Path(config["paths"]["workspaces"]) / workspace_name
+        output_dir = workspace_dir / "output"
 
-    # Verify that output directory exists
-    if not output_dir.exists():
-        logger.warning(f"Output directory does not exist: {output_dir}")
-        return False
+        # Verify that output directory exists
+        if not output_dir.exists():
+            logger.warning(f"Output directory does not exist: {output_dir}")
+            return False
 
-    logger.info(f"Simulating import for website: {website_name} from {output_dir}")
+        source_dirs = [output_dir]
+
+    logger.info(
+        f"Simulating import for website: {website_name} from {', '.join(str(d) for d in source_dirs)}"
+    )
 
     # Just wait a bit to simulate the import process
     logger.info("Uploading website files...")
