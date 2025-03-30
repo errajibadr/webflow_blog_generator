@@ -1,0 +1,9 @@
+---
+description: when using python / python projects
+globs: 
+alwaysApply: false
+---
+- Always use UV for package management
+- Always use Ruff instead of pylint 
+
+- Follow Best practices for Python code ( Typping, good naming conventions, PIP8)
