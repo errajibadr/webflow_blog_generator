@@ -1,0 +1,9 @@
+pyyaml>=6.0.1         # YAML configuration parser
+requests>=2.31.0       # For API interactions
+python-dotenv>=1.0.0   # For environment variable management  
+argparse>=1.4.0        # Command line argument parsing
+coloredlogs>=15.0.1    # For colored log output
+tqdm>=4.66.1           # Progress bars
+selenium>=4.15.0       # For web automation (Hostinger interaction)
+webdriver-manager>=4.0.1 # Webdriver management for Selenium
+ftputil>=5.0.4         # For FTP-based website exports 

@@ -1,7 +1,7 @@
 ---
-description: when using python / python projects
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 - Always use UV for package management
 - Always use Ruff instead of pylint 

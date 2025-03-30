@@ -1,0 +1,17 @@
+website:
+  name: Example Website
+  domain: example.com
+  workspace: example  # Name of the workspace directory
+  
+hostinger:
+  username: your-hostinger-username
+  password: your-hostinger-password
+  # You can use environment variables like ${HOSTINGER_PASSWORD}
+  
+content_generation:
+  topics_file: website/topics_data/example_topics.csv
+  batch_size: 2
+  max_concurrent: 3
+  
+website_enricher:
+  config_file: config/websites/example_blog_config.yaml 

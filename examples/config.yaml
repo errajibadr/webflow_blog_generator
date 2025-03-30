@@ -1,0 +1,18 @@
+# Global settings
+logging:
+  level: INFO
+  file: logs/orchestrator.log
+  console: true
+
+paths:
+  workspaces: workspaces  # Root directory for all website workspaces
+  logs: logs
+
+# Default settings for websites
+defaults:
+  content_generation:
+    batch_size: 2
+    max_concurrent: 3
+  
+  website_enricher:
+    port: 3000 

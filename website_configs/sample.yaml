@@ -1,0 +1,73 @@
+website:
+  name: sample-website
+  domain: sample-website.com
+  workspace: sample-website
+  
+hostinger:
+  host: ftp.sample-website.com  # Optional, defaults to ftp.{domain}
+  username: ${HOSTINGER_FTP_USERNAME}  
+  password: ${HOSTINGER_FTP_PASSWORD}  
+  remote_dir: / 
+
+export:
+  method: auto  # Options: auto, ftp, selenium, simulate
+  
+content_generation:
+  topics_file: topics/sample-topics.csv
+  batch_size: 2
+  max_concurrent: 3
+  
+website_enricher:
+  config_file: website_configs/blog_config.yaml 
+
+blog_config:
+  site:
+    title: TechInsight - Exploring the Future of Technology
+    company_name: TechInsight
+    description: Your go-to resource for the latest tech trends, product reviews, and in-depth analysis of emerging technologies
+    tagline: Illuminating the path to technological innovation
+    author:
+      name: Alex Chen
+      bio: Tech enthusiast with over 15 years of experience in software development and digital transformation
+      photo: src/assets/images/author_alex.jpeg
+    logo: /images/techinsight-logo.png
+    favicon: /images/techinsight-favicon.ico
+    cta_link: https://www.techinsight.com/subscribe
+
+  social:
+    instagram: https://instagram.com/techinsight
+    facebook: https://facebook.com/techinsight
+    twitter: https://twitter.com/techinsight
+    linkedin: https://linkedin.com/company/techinsight
+    github: https://github.com/techinsight
+
+  contact:
+    email: info@techinsight.com
+    phone: +33 9 87 65 43 21
+
+  seo:
+    defaultTitle: TechInsight - Exploring the Future of Technology
+    defaultDescription: Stay ahead of the curve with our expert analysis on AI, blockchain, cybersecurity, and more
+    defaultImage: /images/techinsight-share.jpg
+    googleAnalyticsId: G-TECH1234XX
+
+  ui:
+    backgroundColor: "#F5F7FA"
+    primaryColor: "#2563EB"
+    headerBackground: "#1E293B"
+    textColor: "#1F2937"
+    linkColor: "#3B82F6"
+
+  blog:
+    blogIndexBackground: src/assets/images/background/tech_pattern.webp
+    postsPerPage: 12
+    showAuthorBio: true
+    showSocialShare: true
+    showRecentPosts: true
+    recentPostsCount: 5
+    categories:
+      - Artificial Intelligence
+      - Cloud Computing
+      - Cybersecurity
+      - Programming
+      - Hardware Reviews
