@@ -212,7 +212,9 @@ function isValidImageUrl(url) {
       url, // As is
       path.join(process.cwd(), url), // From current working directory
       path.join(__dirname, url), // From script directory
-      path.join(__dirname, 'data', url) // From src directory
+      path.join(__dirname, 'data', url), // From script directory
+      path.join(argv.csv, url), // From CSV directory
+      path.join(argv.csv, 'images', path.basename(url)) // From CSV directory's images folder
     ];
     
     for (const sourcePath of possiblePaths) {
