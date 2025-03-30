@@ -472,6 +472,39 @@ async function copyAssets(outputDir, config) {
     }
   }
 
+  // Ensure config.blog exists
+  if (!config.blog) {
+    config.blog = {};
+  }
+
+  // Set default value for blogIndexBackground if not specified
+  if (!config.blog.blogIndexBackground) {
+    config.blog.blogIndexBackground = 'src/assets/images/background/waterfall.jpg';
+    console.log('Using default blog index background image: src/assets/images/background/waterfall.jpg');
+  }
+
+  // Copy blog index background image
+  let blogIndexBackgroundPath = '';
+  const blogIndexBackgroundSource = path.join(__dirname, config.blog.blogIndexBackground);
+  const blogIndexBackgroundFilename = path.basename(config.blog.blogIndexBackground);
+  const blogIndexBackgroundDest = path.join(outputDir, 'images', blogIndexBackgroundFilename);
+  
+  try {
+    // Check if the source file exists before attempting to copy
+    if (fs.existsSync(blogIndexBackgroundSource)) {
+      await fs.copy(blogIndexBackgroundSource, blogIndexBackgroundDest);
+      console.log('Copied blog index background image:', blogIndexBackgroundFilename);
+      
+      // Update the config to use the new path for web reference
+      blogIndexBackgroundPath = `/images/${blogIndexBackgroundFilename}`;
+      config.blog.blogIndexBackground = blogIndexBackgroundPath;
+    } else {
+      console.error(`Blog index background image not found at: ${blogIndexBackgroundSource}`);
+    }
+  } catch (error) {
+    console.error('Error copying blog index background image:', error);
+  }
+
   // Generate dynamic CSS with theme colors
   const dynamicCss = `
     :root {
@@ -481,6 +514,10 @@ async function copyAssets(outputDir, config) {
       --link-color: ${config.ui.linkColor};
       --background-color: ${config.ui.backgroundColor};
     }
+    
+    ${blogIndexBackgroundPath ? `.main-column.header {
+      background-image: url('${blogIndexBackgroundPath}');
+    }` : ''}
   `;
   await fs.writeFile(path.join(outputDir, 'css', 'theme.css'), dynamicCss);
 

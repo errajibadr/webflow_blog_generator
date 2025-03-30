@@ -2,10 +2,10 @@
     "site": {
         "title": "DogtoLib - Blog sur la passion canine",
         "company_name": "DogtoLib",
-        "description": "Blog spécialisé sur la passion canine, conseils et astuces pour une relation harmonieuse avec votre chien",
-        "tagline": "Pour une relation harmonieuse avec votre compagnon à quatre pattes",
+        "description": "Votre ressource privilégiée pour comprendre, éduquer et créer des liens profonds avec votre compagnon canin, basée sur le respect et la bienveillance",
+        "tagline": "L'art de comprendre et d'éduquer votre fidèle compagnon",
         "author": {
-            "name": "Passionné de chiens",
+            "name": "Docteur Wouf",
             "bio": "Passionné de chiens, passionné par la relation entre les humains et leurs compagnons",
             "photo": "src/assets/images/author_dogtolib.jpeg"
         },  
@@ -36,6 +36,7 @@
         "linkColor": "#1a8917"
     },
     "blog": {
+        "blogIndexBackground": "src/assets/images/background/dog_waterfall.webp",
         "postsPerPage": 10,
         "showAuthorBio": true,
         "showSocialShare": true,
