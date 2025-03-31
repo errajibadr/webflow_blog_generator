@@ -5,9 +5,9 @@
   "main": "enrich-webflow-export.js",
   "scripts": {
     "start": "node enrich-webflow-export.js --export ../websites/dogtolib/ --csv ../data/dogtolib/ --config ../configs/dogtolib-config.json --output ../dist/dogtolib",
-    "serves": "serve ../dist/dogtolib",
+    "serve": "serve ../dist/dogtolib",
     "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json --exec 'npm start'",
-    "dev": "concurrently \"npm run watch\" \"npm run serves\""
+    "dev": "concurrently \"npm run watch\" \"npm run serve\""
   },
   "dependencies": {
     "cheerio": "^1.0.0",

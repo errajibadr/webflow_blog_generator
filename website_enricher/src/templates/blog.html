@@ -218,18 +218,113 @@
   }
 
   @media (max-width: 768px) {
-    .blog-posts-list {
-      grid-template-columns: 1fr;
+    .all-content {
+      flex-direction: column;
+      width: 100vw;
+      min-height: 100vh;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
     }
     
-    /* Adjust padding on mobile */
+    .main-column.header {
+      position: relative;
+      min-height: 45vh;
+      width: 100%;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .logo {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .big-tagline {
+      font-size: 1.8rem;
+      margin: 1.5rem 0;
+    }
+
+    .info-wrapper-2 {
+      margin: 1.5rem 0;
+    }
+
+    .tagline-2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .main-column.content {
+      width: 100%;
+      padding: 0;
+      flex: 1;
+      overflow-x: hidden;
+    }
+
     .w-dyn-list {
+      width: 100%;
+      max-width: 100vw;
       padding: 1rem;
+      box-sizing: border-box;
+      overflow: hidden;
     }
     
-    /* On mobile, make sure the image is still properly sized */
+    .blog-posts-list {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      gap: 1rem;
+    }
+    
+    .blog-post-item {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .blog-post {
+      width: 100%;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    
+    .post-content-wrapper {
+      padding: 1rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
     .post-image-wrapper {
-      aspect-ratio: 16/9; /* Maintain the same ratio */
+      width: 100%;
+      padding-top: 56.25%;
+      margin: 0;
+    }
+
+    .post-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .post-title {
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+
+    .post-excerpt {
+      width: 100%;
+      margin: 0.5rem 0;
+    }
+
+    .footer-wrapper-3 {
+      margin-top: 1.5rem;
     }
   }
 

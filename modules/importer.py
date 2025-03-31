@@ -56,7 +56,6 @@ def import_website(config: Dict[str, Any], website_name: str) -> bool:
     # Log the import source directories
     source_dirs_str = ", ".join(str(d[0]) for d in import_dirs)
     logger.info(f"Importing website: {website_name} from {source_dirs_str}")
-
     try:
         # Get import method from config or use default priority order
         import_method = website_config.get("import", {}).get("method", "ftp")
