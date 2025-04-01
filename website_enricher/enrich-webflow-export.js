@@ -300,7 +300,9 @@ async function readCsvFile(filePath, config) {
     // Use next available dog picture if no article photo provided
     'photo article': post['photo article'] || getNextDefaultImage(),
     // Process article content to fix invalid image sources
-    'Contenu article': processArticleContent(post['Contenu article'])
+    'Contenu article': processArticleContent(post['Contenu article']),
+    // Normalize the slug
+    'Slug': slugify(post['Slug'])
   }));
 
   if (validPosts.length !== posts.length) {
@@ -336,7 +338,9 @@ async function readJsonFile(filePath, config) {
     // Use next available dog picture if no article photo provided
     'photo article': post['photo article'] || getNextDefaultImage(),
     // Process article content to fix invalid image sources
-    'Contenu article': processArticleContent(post['Contenu article'])
+    'Contenu article': processArticleContent(post['Contenu article']),
+    // Normalize the slug
+    'Slug': slugify(post['Slug'])
   }));
 
   if (validPosts.length !== postsArray.length) {
@@ -569,6 +573,17 @@ async function generateBlogPosts(posts, config, outputDir) {
   const blogDir = path.join(outputDir, 'blog');
   await fs.ensureDir(blogDir);
   
+  // Ensure we have a domain configured
+  if (!config.site || !config.site.domain) {
+    console.error('Warning: No domain configured in config.site.domain. Canonical URLs will not be generated.');
+    return;
+  }
+  
+  // Get base domain for canonical URLs, ensure it starts with www.
+  const baseDomain = config.site.domain.trim();
+  // Remove protocol and www if present, then add https://www.
+  const wwwDomain = `https://www.${baseDomain.replace(/^https?:\/\/(www\.)?/, '')}`;
+  
   // Sort posts by date (most recent first)
   posts.sort((a, b) => {
     const dateA = parseFrenchDate(a['Date de publication']);
@@ -638,6 +653,7 @@ async function generateBlogPosts(posts, config, outputDir) {
       contenu: processedContent, // Use the processed content
       balise_title: post['meta title'] || `${post['Titre']} - ${config.site.company_name}`,
       meta_description: post['meta description'] || post['Résumé de l\'article'],
+      canonical_url: `${wwwDomain}/blog/${post['Slug']}.html`,
       recent_posts: recentPosts,
       showAuthorBio: config.blog.showAuthorBio,
       showSocialShare: config.blog.showSocialShare,
@@ -648,6 +664,66 @@ async function generateBlogPosts(posts, config, outputDir) {
     const outputFile = path.join(blogDir, `${post['Slug']}.html`);
     await fs.outputFile(outputFile, html);
     console.log(`Generated: ${post['Slug']}.html`);
+  }
+}
+
+// Helper function to normalize slugs
+function slugify(text) {
+  if (!text) return '';
+  
+  return text
+    // Convert to lowercase
+    .toLowerCase()
+    // Replace accented characters with non-accented equivalents
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    // Replace spaces and special chars with hyphens
+    .replace(/[^a-z0-9]+/g, '-')
+    // Remove leading/trailing hyphens
+    .replace(/^-+|-+$/g, '')
+    // Replace multiple consecutive hyphens with single hyphen
+    .replace(/-+/g, '-');
+}
+
+// Helper function to escape domain for regex
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Helper function to generate .htaccess file
+async function generateHtaccess(outputDir, config) {
+  if (!config.site || !config.site.domain) {
+    console.error('Warning: No domain configured in config.site.domain. .htaccess file will not be generated.');
+    return;
+  }
+
+  try {
+    // Get clean domain without protocol and www
+    const domain = config.site.domain.replace(/^https?:\/\/(www\.)?/, '').trim();
+    const escapedDomain = escapeRegExp(domain);
+
+    // Read the .htaccess template
+    const templatePath = path.join(__dirname, 'src', 'templates', '.htaccess.template');
+    const template = await readTemplate(templatePath);
+
+    // Generate .htaccess content using the template
+    const htaccessContent = template({
+      domain,
+      escaped_domain: escapedDomain
+    });
+
+    const htaccessPath = path.join(outputDir, '.htaccess');
+    
+    // Check if .htaccess already exists
+    const exists = await fs.pathExists(htaccessPath);
+    if (!exists) {
+      await fs.writeFile(htaccessPath, htaccessContent);
+      console.log('.htaccess file created successfully');
+    } else {
+      console.log('.htaccess file already exists, skipping creation');
+    }
+  } catch (error) {
+    console.error('Error creating .htaccess file:', error);
   }
 }
 
@@ -662,6 +738,9 @@ async function main() {
     
     // Read config first so we can use it during processing
     const config = await readConfig(argv.config);
+    
+    // Generate .htaccess file
+    await generateHtaccess(argv.output, config);
     
     // Copy default article images before processing files
     await copyDogPictures(argv.output);

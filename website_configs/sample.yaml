@@ -23,6 +23,7 @@ website_enricher:
 blog_config:
   site:
     title: TechInsight - Exploring the Future of Technology
+    domain : domain.com
     company_name: TechInsight
     description: Your go-to resource for the latest tech trends, product reviews, and in-depth analysis of emerging technologies
     tagline: Illuminating the path to technological innovation

@@ -1,6 +1,7 @@
 {
     "site": {
         "title": "DogtoLib - Blog sur la passion canine",
+        "domain": "dogtolib.com",
         "company_name": "DogtoLib",
         "description": "Votre ressource privilégiée pour comprendre, éduquer et créer des liens profonds avec votre compagnon canin, basée sur le respect et la bienveillance",
         "tagline": "L'art de comprendre et d'éduquer votre fidèle compagnon",
@@ -11,7 +12,7 @@
         },  
         "logo": "/images/logo.png",
         "favicon": "/images/favicon.ico",
-        "cta_link": "https://www.dogtolib.fr/contact"
+        "cta_link": "https://www.dogtolib.com"
     },
     "social": {
         "instagram": "https://instagram.com/dogtolib",
