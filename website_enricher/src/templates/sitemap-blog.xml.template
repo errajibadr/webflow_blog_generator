@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Blog index -->
+  <url>
+    <loc>https://www.{{domain}}/blog.html</loc>
+    <lastmod>{{lastBlogUpdate}}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Blog posts -->
+  {{#each posts}}
+  <url>
+    <loc>https://www.{{../domain}}/blog/{{this.Slug}}.html</loc>
+    <lastmod>{{formatSitemapDate this.Date_de_publication}}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {{/each}}
+</urlset> 

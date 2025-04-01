@@ -193,7 +193,7 @@ def run_generate(config: ConfigDict, website_name: str) -> None:
     generate_content(config, website_name)
 
 
-def run_enrich(config: ConfigDict, website_name: str) -> None:
+def run_enrich(config: ConfigDict, website_name: str, **kwargs) -> None:
     """
     Run the website enrichment step.
 
@@ -211,7 +211,7 @@ def run_enrich(config: ConfigDict, website_name: str) -> None:
     # Import the module only when needed
     from modules.enricher import enrich_website
 
-    enrich_website(config, website_name)
+    enrich_website(config, website_name, **kwargs)
 
 
 def run_import_website(config: ConfigDict, website_name: str) -> None:
@@ -235,7 +235,7 @@ def run_import_website(config: ConfigDict, website_name: str) -> None:
     import_website(config, website_name)
 
 
-def run_pipeline(config: ConfigDict, website_name: str, steps: List[str]) -> None:
+def run_pipeline(config: ConfigDict, website_name: str, steps: List[str], **kwargs) -> None:
     """
     Run the specified steps of the pipeline.
 
@@ -262,7 +262,7 @@ def run_pipeline(config: ConfigDict, website_name: str, steps: List[str]) -> Non
             run_generate(config, website_name)
 
         if "enrich" in steps:
-            run_enrich(config, website_name)
+            run_enrich(config, website_name, **kwargs)
 
         if "import" in steps:
             run_import_website(config, website_name)
@@ -290,6 +290,9 @@ def main() -> None:
     parser.add_argument("--enrich", action="store_true", help="Enrich website with content")
     parser.add_argument(
         "--import", dest="import_website", action="store_true", help="Import website to Hostinger"
+    )
+    parser.add_argument(
+        "--force-hta", action="store_true", help="Force overwrite of .htaccess file"
     )
     parser.add_argument("--all", action="store_true", help="Run all steps")
 
@@ -322,6 +325,9 @@ def main() -> None:
             steps.append("import")
         if args.all or not steps:  # Default to all if no steps specified
             steps = ["export", "generate", "enrich", "import"]
+        kwargs = {
+            "force-hta": args.force_hta,
+        }
 
         logger.info(f"Running steps: {', '.join(steps)}")
 
@@ -331,7 +337,7 @@ def main() -> None:
             logger.info("DRY RUN MODE - No changes will be made")
 
         # Run pipeline
-        run_pipeline(config, args.website, steps)
+        run_pipeline(config, args.website, steps, **kwargs)
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

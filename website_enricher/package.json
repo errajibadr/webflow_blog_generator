@@ -1,19 +1,21 @@
 {
-  "name": "webflow-blog-generator",
+  "name": "website-enricher",
   "version": "1.0.0",
-  "description": "Enrich Webflow exports with blog functionality",
+  "description": "Enrich Webflow export with blog functionality",
   "main": "enrich-webflow-export.js",
   "scripts": {
-    "start": "node enrich-webflow-export.js --export ../websites/dogtolib/ --csv ../data/dogtolib/ --config ../configs/dogtolib-config.json --output ../dist/dogtolib",
+    "start": "node enrich-webflow-export.js --export ../websites/dogtolib/ --csv ../data/dogtolib/ --config ../configs/dogtolib-config.json --output ../dist/dogtolib  --force-hta",
     "serve": "serve ../dist/dogtolib",
     "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json --exec 'npm start'",
     "dev": "concurrently \"npm run watch\" \"npm run serve\""
   },
   "dependencies": {
-    "cheerio": "^1.0.0",
+    "cheerio": "^1.0.0-rc.12",
     "csv-parse": "^5.5.3",
     "fs-extra": "^11.2.0",
     "handlebars": "^4.7.8",
+    "sitemap": "^7.1.1",
+    "glob": "^10.3.10",
     "yargs": "^17.7.2"
   },
   "devDependencies": {

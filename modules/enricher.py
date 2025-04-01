@@ -20,7 +20,7 @@ import yaml
 logger = logging.getLogger("orchestrator.enricher")
 
 
-def enrich_website(config: Dict[str, Any], website_name: str) -> Path:
+def enrich_website(config: Dict[str, Any], website_name: str, **kwargs) -> Path:
     """
     Enrich website with content using the website enricher module.
 
@@ -45,7 +45,9 @@ def enrich_website(config: Dict[str, Any], website_name: str) -> Path:
     script_path = find_enricher_script()
 
     # Run enricher
-    return run_enricher(script_path, export_dir, content_dir, output_dir, config_path, website_name)
+    return run_enricher(
+        script_path, export_dir, content_dir, output_dir, config_path, website_name, **kwargs
+    )
 
 
 def setup_directories(config: Dict[str, Any], website_name: str) -> Tuple[Path, Path, Path]:
@@ -213,6 +215,7 @@ def run_enricher(
     output_dir: Path,
     config_path: Path,
     website_name: str,
+    **kwargs,
 ) -> Path:
     """
     Run the website enricher script.
@@ -245,6 +248,9 @@ def run_enricher(
         "--output",
         str(output_dir),
     ]
+
+    if kwargs.get("force-hta"):
+        cmd.append("--force-hta")
 
     logger.info(f"Running website enricher: {' '.join(cmd)}")
 

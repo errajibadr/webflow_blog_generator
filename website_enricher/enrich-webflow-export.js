@@ -7,6 +7,9 @@ const Handlebars = require('handlebars');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const cheerio = require('cheerio');
+const { SitemapStream, streamToPromise } = require('sitemap');
+const { Readable } = require('stream');
+const { glob } = require('glob');
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -39,6 +42,11 @@ const argv = yargs(hideBin(process.argv))
     description: 'Port for local testing',
     type: 'number',
     default: 3000
+  })
+  .option('force-hta', {
+    description: 'Force overwrite existing .htaccess file',
+    type: 'boolean',
+    default: false
   })
   .help()
   .argv;
@@ -716,14 +724,186 @@ async function generateHtaccess(outputDir, config) {
     
     // Check if .htaccess already exists
     const exists = await fs.pathExists(htaccessPath);
-    if (!exists) {
+    if (!exists || argv['force-hta']) {
       await fs.writeFile(htaccessPath, htaccessContent);
-      console.log('.htaccess file created successfully');
+      console.log(exists ? '.htaccess file overwritten' : '.htaccess file created successfully');
     } else {
-      console.log('.htaccess file already exists, skipping creation');
+      console.log('.htaccess file already exists, skipping creation (use --force-hta to overwrite)');
     }
   } catch (error) {
     console.error('Error creating .htaccess file:', error);
+  }
+}
+
+// Helper for current date in YYYY-MM-DD format
+Handlebars.registerHelper('currentDate', function() {
+  return new Date().toISOString().split('T')[0];
+});
+
+// Helper for sitemap date format (YYYY-MM-DD)
+Handlebars.registerHelper('formatSitemapDate', function(dateString) {
+  const date = parseFrenchDate(dateString);
+  return date.toISOString().split('T')[0];
+});
+
+// Helper function to get the latest blog update date
+function getLastBlogUpdate(posts) {
+  if (!posts || posts.length === 0) return new Date().toISOString().split('T')[0];
+  
+  const dates = posts.map(post => parseFrenchDate(post['Date de publication']));
+  const latestDate = new Date(Math.max(...dates));
+  return latestDate.toISOString().split('T')[0];
+}
+
+// Helper function to format date for sitemap
+function formatSitemapDate(dateString) {
+  const date = parseFrenchDate(dateString);
+  return date.toISOString().split('T')[0];
+}
+
+// Helper function to discover all HTML files in the output directory
+async function discoverHtmlFiles(outputDir, excludePatterns = []) {
+  try {
+    const files = await glob('**/*.html', { 
+      cwd: outputDir,
+      ignore: excludePatterns
+    });
+    return files;
+  } catch (error) {
+    console.error('Error discovering HTML files:', error);
+    return [];
+  }
+}
+
+// Helper function to generate main sitemap
+async function generateMainSitemap(outputDir, config) {
+  if (!config.site || !config.site.domain) {
+    console.error('Warning: No domain configured in config.site.domain. Main sitemap will not be generated.');
+    return;
+  }
+
+  try {
+    const domain = `https://www.${config.site.domain.replace(/^https?:\/\/(www\.)?/, '')}`;
+    
+    // Discover HTML files, excluding blog files
+    const files = await discoverHtmlFiles(outputDir, ['blog/**', 'blog.html']);
+    
+    // Create sitemap entries
+    const links = files.map(file => ({
+      url: `${domain}/${file}`,
+      changefreq: 'weekly',
+      priority: file === 'index.html' ? 1.0 : 0.7
+    }));
+
+    // Generate sitemap
+    const stream = new SitemapStream({ hostname: domain });
+    const data = await streamToPromise(Readable.from(links).pipe(stream));
+    await fs.writeFile(path.join(outputDir, 'sitemap-main.xml'), data);
+    
+    console.log('Main sitemap generated successfully');
+    console.log('Discovered pages:', files.length);
+  } catch (error) {
+    console.error('Error generating main sitemap:', error);
+  }
+}
+
+// Helper function to generate blog sitemap
+async function generateBlogSitemap(outputDir, config, posts) {
+  if (!config.site || !config.site.domain) {
+    console.error('Warning: No domain configured in config.site.domain. Blog sitemap will not be generated.');
+    return;
+  }
+
+  try {
+    const domain = `https://www.${config.site.domain.replace(/^https?:\/\/(www\.)?/, '')}`;
+    const lastBlogUpdate = getLastBlogUpdate(posts);
+
+    // Create sitemap entries
+    const links = [
+      // Blog index
+      {
+        url: `${domain}/blog.html`,
+        changefreq: 'daily',
+        priority: 0.8,
+        lastmod: lastBlogUpdate
+      },
+      // Blog posts
+      ...posts.map(post => ({
+        url: `${domain}/blog/${post.Slug}.html`,
+        changefreq: 'monthly',
+        priority: 0.6,
+        lastmod: formatSitemapDate(post['Date de publication'])
+      }))
+    ];
+
+    // Generate sitemap
+    const stream = new SitemapStream({ hostname: domain });
+    const data = await streamToPromise(Readable.from(links).pipe(stream));
+    await fs.writeFile(path.join(outputDir, 'sitemap-blog.xml'), data);
+    
+    console.log('Blog sitemap generated successfully');
+    console.log('Total blog URLs:', links.length);
+  } catch (error) {
+    console.error('Error generating blog sitemap:', error);
+  }
+}
+
+// Helper function to generate sitemap index
+async function generateSitemapIndex(outputDir, config) {
+  if (!config.site || !config.site.domain) {
+    console.error('Warning: No domain configured in config.site.domain. Sitemap index will not be generated.');
+    return;
+  }
+
+  try {
+    const domain = `https://www.${config.site.domain.replace(/^https?:\/\/(www\.)?/, '')}`;
+    
+    // Create sitemap index entries
+    const sitemaps = [
+      {
+        url: `${domain}/sitemap-main.xml`,
+        lastmod: new Date().toISOString()
+      },
+      {
+        url: `${domain}/sitemap-blog.xml`,
+        lastmod: new Date().toISOString()
+      }
+    ];
+
+    // Generate sitemap index
+    const stream = new SitemapStream({ hostname: domain, level: 'index' });
+    const data = await streamToPromise(Readable.from(sitemaps).pipe(stream));
+    await fs.writeFile(path.join(outputDir, 'sitemap.xml'), data);
+    
+    console.log('Sitemap index generated successfully');
+  } catch (error) {
+    console.error('Error generating sitemap index:', error);
+  }
+}
+
+// Update robots.txt to point to sitemap index
+async function generateRobotsTxt(outputDir, config) {
+  if (!config.site || !config.site.domain) {
+    console.error('Warning: No domain configured in config.site.domain. robots.txt file will not be generated.');
+    return;
+  }
+
+  try {
+    // Get clean domain without protocol and www
+    const domain = config.site.domain.replace(/^https?:\/\/(www\.)?/, '').trim();
+
+    // Read the robots.txt template
+    const templatePath = path.join(__dirname, 'src', 'templates', 'robots.txt.template');
+    const template = await readTemplate(templatePath);
+
+    // Generate robots.txt content
+    const robotsTxtContent = template({ domain });
+    const robotsTxtPath = path.join(outputDir, 'robots.txt');
+    
+    await fs.writeFile(robotsTxtPath, robotsTxtContent);
+    console.log('robots.txt file created successfully');
+  } catch (error) {
+    console.error('Error creating robots.txt file:', error);
   }
 }
 
@@ -760,6 +940,13 @@ async function main() {
     
     console.log('\nGenerating individual blog posts...');
     await generateBlogPosts(posts, config, argv.output);
+    
+    // Generate sitemaps and robots.txt
+    console.log('\nGenerating sitemaps and robots.txt...');
+    await generateMainSitemap(argv.output, config);
+    await generateBlogSitemap(argv.output, config, posts);
+    await generateSitemapIndex(argv.output, config);
+    await generateRobotsTxt(argv.output, config);
     
     console.log('\nBlog generation completed successfully!');
     console.log(`Total posts processed: ${posts.length}`);

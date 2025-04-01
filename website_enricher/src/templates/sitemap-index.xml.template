@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main website sitemap -->
+  <sitemap>
+    <loc>https://www.{{domain}}/sitemap-main.xml</loc>
+    <lastmod>{{currentDate}}</lastmod>
+  </sitemap>
+  
+  <!-- Blog sitemap -->
+  <sitemap>
+    <loc>https://www.{{domain}}/sitemap-blog.xml</loc>
+    <lastmod>{{lastBlogUpdate}}</lastmod>
+  </sitemap>
+</sitemapindex> 
