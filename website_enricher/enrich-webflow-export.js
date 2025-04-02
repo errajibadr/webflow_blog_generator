@@ -10,6 +10,8 @@ const cheerio = require('cheerio');
 const { SitemapStream, streamToPromise } = require('sitemap');
 const { Readable } = require('stream');
 const { glob } = require('glob');
+const CleanCSS = require('clean-css');
+const Terser = require('terser');
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -249,6 +251,29 @@ function isValidImageUrl(url) {
   return false;
 }
 
+// Helper function to increment heading levels in HTML content
+function incrementHeadingLevels(content) {
+  if (!content) return content;
+  
+  const $ = cheerio.load(content);
+  
+  // Process headings from h5 to h1 in reverse order to avoid conflicts
+  for (let i = 5; i >= 1; i--) {
+    $(`h${i}`).each((_, elem) => {
+      const $elem = $(elem);
+      // Create new heading with incremented level
+      const $newHeading = $(`<h${i + 1}>`).html($elem.html());
+      // Copy all attributes
+      Object.keys(elem.attribs).forEach(attr => {
+        $newHeading.attr(attr, elem.attribs[attr]);
+      });
+      $elem.replaceWith($newHeading);
+    });
+  }
+  
+  return $.html();
+}
+
 // Helper function to process article content and fix invalid image sources
 function processArticleContent(content) {
   if (!content) return content;
@@ -279,8 +304,9 @@ function processArticleContent(content) {
     }
   });
 
-  // Return the processed HTML content
-  return $.html();
+  // Get processed HTML and increment heading levels
+  const processedHtml = $.html();
+  return incrementHeadingLevels(processedHtml);
 }
 
 // Helper function to read and parse CSV file
@@ -442,9 +468,39 @@ async function copyAssets(outputDir, config) {
   await fs.ensureDir(path.join(outputDir, 'css'));
   await fs.ensureDir(path.join(outputDir, 'assets', 'js'));
   await fs.ensureDir(path.join(outputDir, 'assets', 'images', 'social'));
-  await fs.ensureDir(path.join(outputDir, 'images')); // Add images directory
+  await fs.ensureDir(path.join(outputDir, 'images'));
+  await fs.ensureDir(path.join(outputDir, 'js'));
 
-  // Copy all CSS files from src/assets/css
+  // Minify Webflow exported CSS files
+  console.log('\nProcessing Webflow exported CSS files...');
+  
+  // Find all CSS files in the output directory
+  const cssDir = path.join(outputDir, 'css');
+  const cssFiles = await fs.readdir(cssDir);
+  
+  // Static CSS files we know should exist
+  const staticCssFiles = [
+    'normalize.css',
+    'webflow.css',
+    'blog-index.css',
+    'social-icons.css',
+    'blog-style.css'
+  ];
+
+  // Process all CSS files found
+  for (const cssFile of cssFiles) {
+    if (cssFile.endsWith('.css')) {
+      // Check if it's a Webflow generated CSS file (contains hash in name)
+      const isWebflowGenerated = cssFile.match(/.*\.webflow\.css$/);
+      if (isWebflowGenerated || staticCssFiles.includes(cssFile)) {
+        const cssPath = path.join(cssDir, cssFile);
+        console.log(`Processing CSS file: ${cssFile}`);
+        await minifyFile(cssPath, 'css');
+      }
+    }
+  }
+
+  // Copy and minify all CSS files from src/assets/css
   const cssSourceDir = path.join(__dirname, 'src', 'assets', 'css');
   const cssDestDir = path.join(outputDir, 'css');
   
@@ -453,15 +509,36 @@ async function copyAssets(outputDir, config) {
     const cssFiles = await fs.readdir(cssSourceDir);
     for (const file of cssFiles) {
       if (file.endsWith('.css')) {
+        const destPath = path.join(cssDestDir, file);
         await fs.copy(
           path.join(cssSourceDir, file),
-          path.join(cssDestDir, file)
+          destPath
         );
         console.log(`Copied CSS file: ${file}`);
+        // Minify the CSS file
+        await minifyFile(destPath, 'css');
       }
     }
   } catch (error) {
-    console.error('Error copying CSS files:', error);
+    console.error('Error processing CSS files:', error);
+  }
+
+  // Copy and minify JS files
+  const jsSource = path.join(__dirname, 'src', 'assets', 'js');
+  const jsDest = path.join(outputDir, 'js');
+  try {
+    const jsFiles = await fs.readdir(jsSource);
+    for (const file of jsFiles) {
+      if (file.endsWith('.js')) {
+        const destPath = path.join(jsDest, file);
+        await fs.copy(path.join(jsSource, file), destPath);
+        console.log(`Copied JS file: ${file}`);
+        // Minify the JS file
+        await minifyFile(destPath, 'js');
+      }
+    }
+  } catch (error) {
+    console.error('Error processing JS files:', error);
   }
 
   // Copy social icons
@@ -533,12 +610,10 @@ async function copyAssets(outputDir, config) {
       background-image: url('${blogIndexBackgroundPath}');
     }` : ''}
   `;
-  await fs.writeFile(path.join(outputDir, 'css', 'theme.css'), dynamicCss);
-
-  // Copy JS files
-  const jsSource = path.join(__dirname, 'src', 'assets', 'js');
-  const jsDest = path.join(outputDir, 'assets', 'js');
-  await fs.copy(jsSource, jsDest);
+  
+  // Minify and write the dynamic CSS
+  const minifiedDynamicCss = await minifyCSS(dynamicCss);
+  await fs.writeFile(path.join(outputDir, 'css', 'theme.css'), minifiedDynamicCss);
 }
 
 // Generate blog listing page
@@ -904,6 +979,56 @@ async function generateRobotsTxt(outputDir, config) {
     console.log('robots.txt file created successfully');
   } catch (error) {
     console.error('Error creating robots.txt file:', error);
+  }
+}
+
+// Helper function to minify CSS content
+async function minifyCSS(cssContent) {
+  const cleanCSS = new CleanCSS({
+    compatibility: '*',
+    level: 2,
+    sourceMap: false
+  });
+  
+  const output = cleanCSS.minify(cssContent);
+  if (output.errors.length > 0) {
+    console.error('CSS minification errors:', output.errors);
+    return cssContent; // Return original content if there are errors
+  }
+  return output.styles;
+}
+
+// Helper function to minify JS content
+async function minifyJS(jsContent) {
+  try {
+    const result = await Terser.minify(jsContent, {
+      compress: true,
+      mangle: true
+    });
+    return result.code;
+  } catch (error) {
+    console.error('JS minification error:', error);
+    return jsContent; // Return original content if there are errors
+  }
+}
+
+// Helper function to process and minify a file
+async function minifyFile(filePath, type) {
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    let minified;
+    
+    if (type === 'css') {
+      minified = await minifyCSS(content);
+    } else if (type === 'js') {
+      minified = await minifyJS(content);
+    }
+    
+    await fs.writeFile(filePath, minified);
+    const savings = ((content.length - minified.length) / content.length * 100).toFixed(2);
+    console.log(`Minified ${path.basename(filePath)} - Reduced by ${savings}%`);
+  } catch (error) {
+    console.error(`Error minifying ${filePath}:`, error);
   }
 }
 
