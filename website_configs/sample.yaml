@@ -7,18 +7,18 @@ hostinger:
   host: ftp.sample-website.com  # Optional, defaults to ftp.{domain}
   username: ${HOSTINGER_FTP_USERNAME}  
   password: ${HOSTINGER_FTP_PASSWORD}  
-  remote_dir: / 
+  # remote_dir: / 
 
 export:
-  method: auto  # Options: auto, ftp, selenium, simulate
+  method: ftp  # Options: auto, ftp, selenium, simulate
   
 content_generation:
   topics_file: topics/sample-topics.csv
   batch_size: 2
   max_concurrent: 3
   
-website_enricher:
-  config_file: website_configs/blog_config.yaml 
+# website_enricher: ## Legacy i think 
+#   config_file: website_configs/blog_config.yaml 
 
 blog_config:
   site:

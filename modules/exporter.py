@@ -88,8 +88,8 @@ def _export_via_ftp(config: Dict[str, Any], website_name: str, export_dir: Path)
     logger.info(f"Starting FTP export from {ftp_host}{remote_dir}")
 
     try:
-        # Connect to FTP server
-        with ftputil.FTPHost(ftp_host, ftp_user, ftp_password) as ftp_host:
+        # Connect to FTP server with timeout
+        with ftputil.FTPHost(ftp_host, ftp_user, ftp_password, timeout=20) as ftp_host:
             # Check if the specified remote_dir exists
             if not ftp_host.path.exists(remote_dir):
                 logger.error(f"Specified remote directory {remote_dir} does not exist!")

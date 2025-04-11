@@ -1,6 +1,7 @@
 {
     "site": {
         "title": "Feel Good Dog - Blog d'éducation canine",
+        "domain": "feelgooddog.fr",
         "company_name": "Feel Good Dog",
         "description": "Blog spécialisé en éducation canine et bien-être animal, conseils et astuces pour une relation harmonieuse avec votre chien",
         "tagline": "Pour une relation harmonieuse avec votre compagnon à quatre pattes",
@@ -11,7 +12,7 @@
         },  
         "logo": "/images/logo.png",
         "favicon": "/images/favicon.ico",
-        "cta_link": "https://www.feelgooddog.fr/contact"
+        "cta_link": "https://www.feelgooddog.fr/services"
     },
     "social": {
         "instagram": "https://instagram.com/feelgooddog",

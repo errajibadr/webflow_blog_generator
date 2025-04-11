@@ -109,8 +109,9 @@ def _import_via_ftp(
     logger.info(f"Starting FTP import to {ftp_host}{remote_dir}")
 
     try:
-        # Connect to FTP server
-        with ftputil.FTPHost(ftp_host, ftp_user, ftp_password) as ftp_host:
+        with ftputil.FTPHost(
+            ftp_host, ftp_user, ftp_password, timeout=20, encoding="utf-8"
+        ) as ftp_host:
             # Check if the specified remote_dir exists, create if not
             if not ftp_host.path.exists(remote_dir):
                 logger.info(f"Creating remote directory {remote_dir}")
@@ -130,6 +131,7 @@ def _import_via_ftp(
 
                 # Walk the local directory structure
                 for dirpath, dirnames, filenames in os.walk(source_dir):
+                    logger.info(f"Processing directory: {dirpath}")
                     # Create the corresponding remote path
                     rel_path = os.path.relpath(dirpath, source_dir)
 
