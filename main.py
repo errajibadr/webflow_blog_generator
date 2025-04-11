@@ -188,7 +188,7 @@ def run_generate(config: ConfigDict, website_name: str) -> None:
         return
 
     # Import the module only when needed
-    from modules.content_generator import generate_content
+    from modules.content_generator.content_generator import generate_content
 
     generate_content(config, website_name)
 

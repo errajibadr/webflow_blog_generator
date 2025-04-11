@@ -7,15 +7,41 @@ This module generates SEO content for websites based on configuration.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import subprocess
 from pathlib import Path
+from typing import Dict, List
+
+from modules.content_generator.event_processor import EventProcessor
+from modules.content_generator.models import BlogArticle, ImageDetail
 
 
-def generate_content(config, website_name):
+def process_image_placeholders(content: str, image_details: List[ImageDetail]) -> str:
     """
-    Generate content using the content generation module.
+    Replace image placeholders in content with actual image URLs.
+
+    Args:
+        content: HTML content with image placeholders
+        image_details: List of ImageDetail objects containing placeholders and URLs
+
+    Returns:
+        Content with replaced image URLs
+    """
+    if not content:
+        return content
+
+    # Replace each placeholder with its corresponding URL
+    for image_detail in image_details:
+        if image_detail.placeholder and image_detail.url:
+            content = content.replace(image_detail.placeholder, image_detail.url)
+
+    return content
+
+
+def generate_content(config: Dict, website_name: str) -> Path:
+    """
+    Generate content using the content generation API.
 
     Args:
         config: The loaded configuration
@@ -26,19 +52,16 @@ def generate_content(config, website_name):
     """
     logger = logging.getLogger("orchestrator.content_generator")
     website_config = config["website"]
-    content_executable = os.getenv(
-        "CONTENT_GENERATOR_EXECUTABLE", config["paths"]["content_generator"]
-    )
-    # Expand tilde in the path to handle home directory references
-    content_executable = os.path.expanduser(content_executable)
     content_config = website_config.get("content_generation", {})
 
     # Determine the workspace directory
     workspace_name = website_config["website"].get("workspace", website_name)
     content_dir = Path(config["paths"]["workspaces"]) / workspace_name / "content"
+    images_dir = content_dir / "images"
 
-    # Create content directory if it doesn't exist
+    # Create content and images directories if they don't exist
     os.makedirs(content_dir, exist_ok=True)
+    os.makedirs(images_dir, exist_ok=True)
 
     logger.info(f"Generating content for website: {website_name} in {content_dir}")
 
@@ -60,48 +83,57 @@ def generate_content(config, website_name):
     logger.info(f"Batch size: {batch_size}")
     logger.info(f"Max concurrent: {max_concurrent}")
 
-    # Extract the directory from the content_executable path
-    content_executable_dir = os.path.dirname(content_executable)
-
-    # Call the content generation script using UV with project flag
-    cmd = [
-        "uv",
-        "run",
-        # "--directory",
-        # content_executable_dir,  # Change to the directory containing the script
-        "--project",
-        content_executable_dir,  # Use the directory containing the script as the project directory
-        content_executable,
-        "--input",
-        topics_file,
-        "--output",
-        str(content_dir),
-        "--batch",
-        str(batch_size),
-        "--max-concurrent",
-        str(max_concurrent),
-    ]
-
+    # TODO: Implement local SEO support in the API and handle the local_seo option here
     if content_config.get("local_seo") is not None:
-        cmd.append("--local-seo")
-        cmd.append(content_config.get("local_seo"))
-
-    logger.info(f"Running content generation: {' '.join(cmd)}")
+        logger.warning("Local SEO option is not yet supported in the API version")
 
     try:
-        # Run the command
-        process = subprocess.run(cmd, check=True, text=True, capture_output=True)
+        # Initialize the event processor with the topics file
+        processor = EventProcessor(topics_file=topics_file)
 
-        # Log output
-        if process.stdout:
-            logger.debug(f"Content generation output: {process.stdout}")
+        # Get the batch results first
+        results = processor.get_batch_results(
+            batch_size=batch_size,
+            tone="friendly and familiar",  # TODO: Make this configurable
+            poll_status=True,
+        )
+
+        # Then parse the results with our content directory
+        processed_results = processor.parse_batch_results(results, content_dir)
+
+        # Process each result and save to files
+        for result in processed_results:
+            if result["status"] == "SUCCESS" and "blog_article" in result:
+                blog_article: BlogArticle = result["blog_article"]
+
+                # Process image placeholders in the content
+                if hasattr(blog_article, "content"):
+                    blog_article.content = process_image_placeholders(
+                        blog_article.content, blog_article.image_details
+                    )
+
+                try:
+                    # Use slug for filename
+                    if not blog_article.slug:
+                        logger.warning("Blog article has no slug, using default name")
+                        filename = blog_article.title.lower().replace(" ", "-")
+                    else:
+                        filename = f"{blog_article.slug}.json"
+
+                    file_path = content_dir / filename
+
+                    # Convert blog article to dictionary and save as JSON
+                    article_data = blog_article.to_json_dict()
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        json.dump(article_data, f, ensure_ascii=False, indent=4)
+
+                    logger.info(f"Saved blog article to {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to save blog article: {e}")
+                    raise
 
         logger.info(f"Generated content for website: {website_name}")
         return content_dir
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Content generation failed with code {e.returncode}: {e.stderr}")
-        raise RuntimeError(f"Content generation failed with code {e.returncode}")
 
     except Exception as e:
         logger.error(f"Content generation failed: {e}")

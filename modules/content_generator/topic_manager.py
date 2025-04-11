@@ -10,13 +10,10 @@ from __future__ import annotations
 
 import logging
 import random
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
-from uuid import uuid4
 
-from models import KeywordData
-
+from modules.content_generator.models import KeywordData
 from modules.utils.csv_processor import TopicsCSVProcessor
 
 logger = logging.getLogger(__name__)
@@ -107,7 +104,9 @@ class TopicManager:
             List of event data
         """
         topics = self.select_random_topics(batch_size)
-        return [self.create_event({topic: keywords}, tone) for topic, keywords in topics.items()]
+        return [
+            self.create_event({topic: keywords}, tone=tone) for topic, keywords in topics.items()
+        ]
 
     def get_remaining_topics_count(self) -> int:
         """Get the count of remaining available topics.

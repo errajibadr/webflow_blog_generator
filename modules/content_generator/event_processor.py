@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from modules.content_generator.models import BlogArticle
 from modules.content_generator.topic_manager import TopicManager
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,12 @@ class EventProcessor:
             interval: Polling interval in seconds
 
         Returns:
-            Task status and result
+            Task result of the form:
+            {
+                "status": "SUCCESS" | "FAILURE" | "PENDING",
+                "result": {
+                    "blog_article": BlogArticle
+                }
         """
         while True:
             try:
@@ -89,18 +95,18 @@ class EventProcessor:
                 logger.error(f"Failed to check task status: {e}")
                 raise
 
-    def process_batch(
-        self, batch_size: int, tone: str = "friendly and familiar", poll_status: bool = False
-    ) -> List[str]:
-        """Process a batch of random topics.
+    def get_batch_results(
+        self, batch_size: int, tone: str = "friendly and familiar", poll_status: bool = True
+    ) -> List[Dict[str, Any]]:
+        """Get results for a batch of random topics.
 
         Args:
             batch_size: Number of topics to process
             tone: Desired tone for the content
-            poll_status: Whether to poll for task completion
+            poll_status: Whether to poll for task completion (defaults to True)
 
         Returns:
-            List of task IDs
+            List[Dict[str, Any]]: List of raw task results from the API
         """
         if not self.topic_manager:
             raise ValueError(
@@ -108,25 +114,99 @@ class EventProcessor:
             )
 
         events = self.topic_manager.generate_batch_events(batch_size, tone)
-        # Convert KeywordData objects to JSON serializable dictionaries
+        # Convert KeywordData objects to dictionaries
         for event in events:
             if "clusters" in event:
                 for cluster, keywords in event["clusters"].items():
-                    event["clusters"][cluster] = [keyword.model_dump_json() for keyword in keywords]
+                    event["clusters"][cluster] = [keyword.model_dump() for keyword in keywords]
 
         # Filter out events with empty topics
         events = [event for event in events if event.get("clusters")]
-        task_ids = []
+        results = []
 
         for event in events:
             task_id = self.send_event(event)
-            task_ids.append(task_id)
 
             if poll_status:
                 status = self.check_task_status(task_id, poll=True)
                 logger.info(f"Task {task_id} completed with status: {status['status']}")
+                results.append(
+                    {
+                        "task_id": task_id,
+                        "status": status["status"],
+                        "result": status.get("result"),
+                        "error": status.get("error"),
+                    }
+                )
+            else:
+                results.append({"task_id": task_id, "status": "SUBMITTED"})
 
-        return task_ids
+        return results
+
+    def parse_batch_results(
+        self, results: List[Dict[str, Any]], output_dir: str | Path
+    ) -> List[Dict[str, Any]]:
+        """Parse and process a batch of results.
+
+        Args:
+            results: List of raw results from get_batch_results
+            output_dir: Directory to save generated content and images
+
+        Returns:
+            List[Dict[str, Any]]: List of processed results with blog articles and image paths
+        """
+        processed_results = []
+
+        for result in results:
+            task_id = result["task_id"]
+            status = result["status"]
+
+            if status == "SUCCESS" and result.get("result"):
+                try:
+                    blog_article = self.process_response(result["result"], output_dir)
+                    processed_results.append(
+                        {"task_id": task_id, "status": status, "blog_article": blog_article}
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to process result for task {task_id}: {e}")
+                    processed_results.append(
+                        {"task_id": task_id, "status": "PROCESSING_ERROR", "error": str(e)}
+                    )
+            else:
+                processed_results.append(
+                    {
+                        "task_id": task_id,
+                        "status": status,
+                        "error": result.get("error", "Unknown error"),
+                    }
+                )
+
+        return processed_results
+
+    def process_batch(
+        self, batch_size: int, tone: str = "friendly and familiar", poll_status: bool = True
+    ) -> List[Dict[str, Any]]:
+        """Process a batch of random topics (combines getting and parsing results).
+
+        Args:
+            batch_size: Number of topics to process
+            tone: Desired tone for the content
+            poll_status: Whether to poll for task completion (defaults to True)
+
+        Returns:
+            List[Dict[str, Any]]: List of completed task results, including generated content
+        """
+        results = self.get_batch_results(batch_size, tone, poll_status)
+        return self.parse_batch_results(results, "output_content")
+
+    def process_response(self, response_data: dict, output_dir: str | Path) -> BlogArticle:
+        # Deserialize the response into a BlogArticle
+        blog_article = BlogArticle.from_api_response(response_data)
+
+        # Export any generated images
+        blog_article.export_images(output_dir)
+
+        return blog_article
 
 
 def main():
@@ -138,8 +218,8 @@ def main():
 
     try:
         # Process a batch of 3 topics
-        task_ids = processor.process_batch(batch_size=1, poll_status=True)
-        logger.info(f"Processed batch with task IDs: {task_ids}")
+        results = processor.process_batch(batch_size=1, poll_status=True)
+        logger.info(f"Processed batch with results: {results}")
 
     except Exception as e:
         logger.error(f"Error processing batch: {e}")

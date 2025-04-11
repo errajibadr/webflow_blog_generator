@@ -109,9 +109,17 @@ def _import_via_ftp(
     logger.info(f"Starting FTP import to {ftp_host}{remote_dir}")
 
     try:
+        # Configure FTP connection with UTF-8 encoding and binary mode
         with ftputil.FTPHost(
-            ftp_host, ftp_user, ftp_password, timeout=20, encoding="utf-8"
+            ftp_host,
+            ftp_user,
+            ftp_password,
+            timeout=20,
+            encoding="latin1",  # Use latin1 for better compatibility with special characters
         ) as ftp_host:
+            # Set binary mode for the FTP session
+            ftp_host._session.voidcmd("TYPE I")
+
             # Check if the specified remote_dir exists, create if not
             if not ftp_host.path.exists(remote_dir):
                 logger.info(f"Creating remote directory {remote_dir}")
@@ -151,41 +159,69 @@ def _import_via_ftp(
                         )
 
                     # Ensure the remote directory exists
-                    if not ftp_host.path.exists(remote_path):
-                        logger.debug(f"Creating remote directory: {remote_path}")
-                        ftp_host.makedirs(remote_path)
-                        dir_count += 1
-                    elif remote_path != remote_dir:  # Don't count the root remote dir
-                        dir_count += 1
+                    try:
+                        if not ftp_host.path.exists(remote_path):
+                            logger.debug(f"Creating remote directory: {remote_path}")
+                            ftp_host.makedirs(remote_path)
+                            dir_count += 1
+                        elif remote_path != remote_dir:  # Don't count the root remote dir
+                            dir_count += 1
+                    except UnicodeEncodeError:
+                        logger.error(f"Encoding error with directory name: {remote_path}")
+                        continue
 
                     if dir_count <= 5:  # Only show first 5 directories in debug mode
                         logger.debug(f"Processing directory: {dirpath} -> {remote_path}")
 
                     # Upload each file
                     for filename in filenames:
-                        local_file = os.path.join(dirpath, filename)
-                        remote_file = os.path.join(remote_path, filename)
+                        try:
+                            local_file = os.path.join(dirpath, filename)
+                            remote_file = os.path.join(remote_path, filename)
 
-                        # Check if file exists and is older (need to upload)
-                        update_file = True
-                        if ftp_host.path.exists(remote_file):
-                            local_time = os.path.getmtime(local_file)
-                            try:
-                                remote_time = ftp_host.path.getmtime(remote_file)
-                                if remote_time >= local_time:
-                                    if skipped_count < 5:  # Limit log entries
-                                        logger.debug(f"Skipping (up to date): {remote_file}")
-                                    skipped_count += 1
-                                    update_file = False
-                            except ftputil.error.FTPOSError:
-                                # If we can't get the mtime, we should upload
-                                logger.debug(f"Could not get mtime for {remote_file}, will upload")
+                            # Check if file exists and is older (need to upload)
+                            update_file = True
+                            if ftp_host.path.exists(remote_file):
+                                local_time = os.path.getmtime(local_file)
+                                try:
+                                    remote_time = ftp_host.path.getmtime(remote_file)
+                                    if remote_time >= local_time:
+                                        if skipped_count < 5:  # Limit log entries
+                                            logger.debug(f"Skipping (up to date): {remote_file}")
+                                        skipped_count += 1
+                                        update_file = False
+                                except ftputil.error.FTPOSError:
+                                    # If we can't get the mtime, we should upload
+                                    logger.debug(
+                                        f"Could not get mtime for {remote_file}, will upload"
+                                    )
 
-                        if update_file:
-                            if file_count < 10:  # Only show first 10 files in debug mode
-                                logger.debug(f"Uploading: {local_file} -> {remote_file}")
-                            file_count += 1
-                            ftp_host.upload(local_file, remote_file)
+                            if update_file:
+                                if file_count < 10:  # Only show first 10 files in debug mode
+                                    logger.debug(f"Uploading: {local_file} -> {remote_file}")
+                                file_count += 1
+
+                                # Custom upload implementation to ensure binary mode
+                                try:
+                                    with open(local_file, "rb") as local_fp:
+                                        # Reset binary mode before each transfer
+                                        ftp_host._session.voidcmd("TYPE I")
+                                        # Use lower level FTP commands for more control
+                                        ftp_host._session.storbinary(
+                                            f"STOR {remote_file}", local_fp
+                                        )
+                                except Exception as upload_error:
+                                    logger.error(
+                                        f"Error during binary upload of {filename}: {upload_error}"
+                                    )
+                                    continue
+
+                        except UnicodeEncodeError:
+                            logger.error(f"Encoding error with file: {filename}")
+                            continue
+                        except Exception as e:
+                            logger.error(f"Error uploading file {filename}: {e}")
+                            continue
 
             # Log summary
             logger.info("FTP import completed successfully:")

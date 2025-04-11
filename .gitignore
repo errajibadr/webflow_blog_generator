@@ -55,3 +55,6 @@ website_configs/*
 websites/
 
 data/
+
+tests/output/
+tests/test_data/
