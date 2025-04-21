@@ -56,6 +56,7 @@ def generate_content(config: Dict, website_name: str) -> Path:
 
     # Determine the workspace directory
     workspace_name = website_config["website"].get("workspace", website_name)
+    locale = website_config["website"].get("locale", "fr")
     content_dir = Path(config["paths"]["workspaces"]) / workspace_name / "content"
     images_dir = content_dir / "images"
 
@@ -95,6 +96,7 @@ def generate_content(config: Dict, website_name: str) -> Path:
         results = processor.get_batch_results(
             batch_size=batch_size,
             tone="friendly and familiar",  # TODO: Make this configurable
+            locale=locale,
             poll_status=True,
         )
 

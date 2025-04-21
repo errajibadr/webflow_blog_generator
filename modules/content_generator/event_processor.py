@@ -96,7 +96,11 @@ class EventProcessor:
                 raise
 
     def get_batch_results(
-        self, batch_size: int, tone: str = "friendly and familiar", poll_status: bool = True
+        self,
+        batch_size: int,
+        tone: str = "friendly and familiar",
+        poll_status: bool = True,
+        locale: str | None = None,
     ) -> List[Dict[str, Any]]:
         """Get results for a batch of random topics.
 
@@ -104,7 +108,7 @@ class EventProcessor:
             batch_size: Number of topics to process
             tone: Desired tone for the content
             poll_status: Whether to poll for task completion (defaults to True)
-
+            locale: Locale for the event (optional)
         Returns:
             List[Dict[str, Any]]: List of raw task results from the API
         """
@@ -113,7 +117,7 @@ class EventProcessor:
                 "Topic manager not initialized. Please provide topics_file in constructor."
             )
 
-        events = self.topic_manager.generate_batch_events(batch_size, tone)
+        events = self.topic_manager.generate_batch_events(batch_size, tone, locale)
         # Convert KeywordData objects to dictionaries
         for event in events:
             if "clusters" in event:
@@ -184,7 +188,11 @@ class EventProcessor:
         return processed_results
 
     def process_batch(
-        self, batch_size: int, tone: str = "friendly and familiar", poll_status: bool = True
+        self,
+        batch_size: int,
+        tone: str = "friendly and familiar",
+        poll_status: bool = True,
+        locale: str | None = None,
     ) -> List[Dict[str, Any]]:
         """Process a batch of random topics (combines getting and parsing results).
 
@@ -196,7 +204,7 @@ class EventProcessor:
         Returns:
             List[Dict[str, Any]]: List of completed task results, including generated content
         """
-        results = self.get_batch_results(batch_size, tone, poll_status)
+        results = self.get_batch_results(batch_size, tone, poll_status, locale)
         return self.parse_batch_results(results, "output_content")
 
     def process_response(self, response_data: dict, output_dir: str | Path) -> BlogArticle:
@@ -214,11 +222,11 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     # Example usage
-    processor = EventProcessor(topics_file="website_configs/topics/dogtolib_content.csv")
+    processor = EventProcessor(topics_file="website_configs/topics/dogtolib.csv")
 
     try:
         # Process a batch of 3 topics
-        results = processor.process_batch(batch_size=1, poll_status=True)
+        results = processor.process_batch(batch_size=1, poll_status=True, locale="fr")
         logger.info(f"Processed batch with results: {results}")
 
     except Exception as e:

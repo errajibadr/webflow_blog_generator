@@ -64,12 +64,15 @@ class TopicManager:
         action: str = "content_generation",
         tone: str = "friendly and familiar",
         backlinks: List[str] = [],
+        locale: str | None = None,
     ) -> Dict[str, Any]:
         """Create an event from a topic.
 
         Args:
             topic: Topic data
             tone: Desired tone for the content
+            backlinks: context for the backlink ( assumed to be 1 at most for now)
+            locale: Locale for the event (optional)
 
         Returns:
             Event data conforming to EventSchema
@@ -81,7 +84,10 @@ class TopicManager:
             "clusters": topic,
             "backlinks": backlinks,
         }
-
+        if locale:
+            event["locale"] = locale
+        if backlinks:
+            event["backlinks"] = {"backlink_context": backlink for backlink in backlinks}
         return event
 
     def create_random_event(
@@ -92,7 +98,7 @@ class TopicManager:
         return self.create_event(self.select_random_topics(1), tone=tone, backlinks=backlinks)
 
     def generate_batch_events(
-        self, batch_size: int, tone: str = "friendly and familiar"
+        self, batch_size: int, tone: str = "friendly and familiar", locale: str | None = None
     ) -> List[Dict[str, Any]]:
         """Generate multiple events for batch processing.
 
@@ -105,7 +111,8 @@ class TopicManager:
         """
         topics = self.select_random_topics(batch_size)
         return [
-            self.create_event({topic: keywords}, tone=tone) for topic, keywords in topics.items()
+            self.create_event({topic: keywords}, tone=tone, locale=locale)
+            for topic, keywords in topics.items()
         ]
 
     def get_remaining_topics_count(self) -> int:

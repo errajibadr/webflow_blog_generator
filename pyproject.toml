@@ -17,3 +17,8 @@ dependencies = [
     "tqdm>=4.66.1",
     "webdriver-manager>=4.0.1",
 ]
+
+[dependency-groups]
+dev = [
+    "logfire>=3.14.0",
+]

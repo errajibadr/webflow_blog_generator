@@ -186,6 +186,7 @@ class BlogArticle(BaseModel):
     meta_description: str
     # cluster_keyword_data: List[KeywordData]
     image_details: List[ImageDetail] = []
+    json_ld: Optional[str] = None
 
     @classmethod
     def from_api_response(cls, response_data: dict) -> "BlogArticle":
@@ -262,4 +263,5 @@ class BlogArticle(BaseModel):
             "Résumé de l'article": self.article_summary,
             "Balise title": self.title_tag,
             "META DESCRIPTION": self.meta_description,
+            "JSON_LD": self.json_ld,
         }
