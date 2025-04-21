@@ -721,6 +721,25 @@ async function generateBlogPosts(posts, config, outputDir) {
       processedContent = processedContent.replace(/\{\{cta_link\}\}/g, config.site.cta_link);
     }
 
+    // Prepare JSON-LD for this post
+    let jsonLdScript = '';
+    if (post['JSON_LD']) {
+      try {
+        let jsonLdArr = JSON.parse(post['JSON_LD']);
+        // Replace placeholders in all objects in the array
+        jsonLdArr = jsonLdArr.map(obj => {
+          let str = JSON.stringify(obj);
+          str = str.replace(/\{author\}/g, post['auteur'] || config.site.author.name);
+          str = str.replace(/\{main_entity_of_page\}/g, `${wwwDomain}/blog/${post['Slug']}.html`);
+          return JSON.parse(str);
+        });
+        jsonLdScript = `<script type=\"application/ld+json\">${JSON.stringify(jsonLdArr, null, 2)}</script>`;
+      } catch (e) {
+        console.error('Error processing JSON_LD for post', post['Slug'], e);
+        jsonLdScript = '';
+      }
+    }
+
     // Prepare template data
     const templateData = {
       config,
@@ -740,7 +759,8 @@ async function generateBlogPosts(posts, config, outputDir) {
       recent_posts: recentPosts,
       showAuthorBio: config.blog.showAuthorBio,
       showSocialShare: config.blog.showSocialShare,
-      article_types: articleTypes
+      article_types: articleTypes,
+      json_ld_script: jsonLdScript
     };
     
     const html = template(templateData);
