@@ -19,13 +19,14 @@ import ftputil
 import ftputil.error
 
 
-def import_website(config: Dict[str, Any], website_name: str) -> bool:
+def import_website(config: Dict[str, Any], website_name: str, purge_remote: bool = False) -> bool:
     """
     Import a website to Hostinger.
 
     Args:
         config: The loaded configuration
         website_name: Name of the website to import
+        purge_remote: If True, purge all files in the remote directory before import
 
     Returns:
         True if successful, False otherwise
@@ -61,7 +62,7 @@ def import_website(config: Dict[str, Any], website_name: str) -> bool:
         import_method = website_config.get("import", {}).get("method", "ftp")
 
         if import_method == "ftp":
-            success = _import_via_ftp(config, website_name, import_dirs)
+            success = _import_via_ftp(config, import_dirs, purge_remote=purge_remote)
         elif import_method == "simulate":
             success = simulate_import(config, website_name, [d[0] for d in import_dirs])
         else:
@@ -80,8 +81,29 @@ def import_website(config: Dict[str, Any], website_name: str) -> bool:
         raise RuntimeError(f"Failed to import website: {e}")
 
 
+def _purge_remote_dir(ftp_host, remote_dir):
+    """
+    Recursively delete all files and directories in remote_dir on the FTP server.
+    """
+    logger = logging.getLogger("orchestrator.importer.ftp")
+    try:
+        for item in ftp_host.listdir(remote_dir):
+            item_path = ftp_host.path.join(remote_dir, item)
+            if ftp_host.path.isdir(item_path):
+                logger.info(f"Recursively deleting remote directory: {item_path}")
+                _purge_remote_dir(ftp_host, item_path)
+                ftp_host.rmdir(item_path)
+                logger.info(f"Deleted remote directory: {item_path}")
+            else:
+                ftp_host.remove(item_path)
+
+    except Exception as e:
+        logger.error(f"Error purging remote directory {remote_dir}: {e}")
+        raise
+
+
 def _import_via_ftp(
-    config: Dict[str, Any], website_name: str, source_dirs: List[Tuple[Path, bool]]
+    config: Dict[str, Any], source_dirs: List[Tuple[Path, bool]], purge_remote: bool = False
 ) -> bool:
     """
     Import a website to Hostinger using FTP.
@@ -92,6 +114,7 @@ def _import_via_ftp(
         source_dirs: List of tuples containing (directory_path, preserve_parent_dir_flag)
                     When preserve_parent_dir_flag is True, the parent directory name will be
                     preserved in the remote path
+        purge_remote: If True, purge all files in the remote directory before import
 
     Returns:
         True if successful, False otherwise
@@ -124,6 +147,10 @@ def _import_via_ftp(
             if not ftp_host.path.exists(remote_dir):
                 logger.info(f"Creating remote directory {remote_dir}")
                 ftp_host.makedirs(remote_dir)
+            elif purge_remote:
+                logger.warning(f"Purging all contents of remote directory: {remote_dir}")
+                _purge_remote_dir(ftp_host, remote_dir)
+                logger.info(f"Purged all contents of remote directory: {remote_dir}")
 
             # Initialize counters for statistics
             file_count = 0

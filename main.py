@@ -214,13 +214,14 @@ def run_enrich(config: ConfigDict, website_name: str, **kwargs) -> None:
     enrich_website(config, website_name, **kwargs)
 
 
-def run_import_website(config: ConfigDict, website_name: str) -> None:
+def run_import_website(config: ConfigDict, website_name: str, purge_remote: bool = False) -> None:
     """
     Run the import step.
 
     Args:
         config: The loaded configuration
         website_name: Name of the website to import
+        purge_remote: If True, purge all files in the remote directory before import
     """
     logger = logging.getLogger("orchestrator.import")
     logger.info(f"Starting import process for website: {website_name}")
@@ -232,10 +233,12 @@ def run_import_website(config: ConfigDict, website_name: str) -> None:
     # Import the module only when needed
     from modules.importer import import_website
 
-    import_website(config, website_name)
+    import_website(config, website_name, purge_remote=purge_remote)
 
 
-def run_pipeline(config: ConfigDict, website_name: str, steps: List[str], **kwargs) -> None:
+def run_pipeline(
+    config: ConfigDict, website_name: str, steps: List[str], purge_remote: bool = False, **kwargs
+) -> None:
     """
     Run the specified steps of the pipeline.
 
@@ -243,6 +246,7 @@ def run_pipeline(config: ConfigDict, website_name: str, steps: List[str], **kwar
         config: The loaded configuration
         website_name: Name of the website
         steps: List of steps to run (export, generate, enrich, import)
+        purge_remote: If True, purge all files in the remote directory before import
 
     Raises:
         Exception: If any step fails
@@ -265,7 +269,7 @@ def run_pipeline(config: ConfigDict, website_name: str, steps: List[str], **kwar
             run_enrich(config, website_name, **kwargs)
 
         if "import" in steps:
-            run_import_website(config, website_name)
+            run_import_website(config, website_name, purge_remote=purge_remote)
 
         logger.info(f"Pipeline completed for website: {website_name}")
     except Exception as e:
@@ -299,6 +303,11 @@ def main() -> None:
     # Other options
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     parser.add_argument("--dry-run", action="store_true", help="Dry run (no actual changes)")
+    parser.add_argument(
+        "--purge-remote",
+        action="store_true",
+        help="Purge all files in the remote directory before import (DANGEROUS)",
+    )
 
     args = parser.parse_args()
 
@@ -337,7 +346,7 @@ def main() -> None:
             logger.info("DRY RUN MODE - No changes will be made")
 
         # Run pipeline
-        run_pipeline(config, args.website, steps, **kwargs)
+        run_pipeline(config, args.website, steps, purge_remote=args.purge_remote, **kwargs)
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
