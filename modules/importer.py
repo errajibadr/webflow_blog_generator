@@ -178,6 +178,20 @@ def _import_via_ftp(
                         try:
                             local_file = os.path.join(dirpath, filename)
                             remote_file = os.path.join(remote_path, filename)
+                            temp_remote_file = os.path.join(remote_path, f".in.{filename}")
+
+                            # Clean up temp file if it exists before upload
+                            if ftp_host.path.exists(temp_remote_file):
+                                try:
+                                    logger.warning(
+                                        f"Removing leftover temp file before upload: {temp_remote_file}"
+                                    )
+                                    ftp_host.remove(temp_remote_file)
+                                except Exception as cleanup_error:
+                                    logger.error(
+                                        f"Failed to remove temp file {temp_remote_file}: {cleanup_error}"
+                                    )
+                                    # Continue anyway, as upload will fail if not removed
 
                             # Check if file exists and is older (need to upload)
                             update_file = True

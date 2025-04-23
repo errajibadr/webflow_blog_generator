@@ -257,19 +257,16 @@ function incrementHeadingLevels(content) {
   
   const $ = cheerio.load(content);
   
-  // Process headings from h5 to h1 in reverse order to avoid conflicts
-  for (let i = 5; i >= 1; i--) {
-    $(`h${i}`).each((_, elem) => {
-      const $elem = $(elem);
-      // Create new heading with incremented level
-      const $newHeading = $(`<h${i + 1}>`).html($elem.html());
-      // Copy all attributes
-      Object.keys(elem.attribs).forEach(attr => {
-        $newHeading.attr(attr, elem.attribs[attr]);
-      });
-      $elem.replaceWith($newHeading);
+  // Only convert <h1> to <h2>, leave other headings unchanged
+  $('h1').each((_, elem) => {
+    const $elem = $(elem);
+    const $newHeading = $('<h2>').html($elem.html());
+    // Copy all attributes
+    Object.keys(elem.attribs).forEach(attr => {
+      $newHeading.attr(attr, elem.attribs[attr]);
     });
-  }
+    $elem.replaceWith($newHeading);
+  });
   
   return $.html();
 }
