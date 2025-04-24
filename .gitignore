@@ -54,6 +54,8 @@ website_configs/*
 
 websites/
 
+old_rules/
+
 data/
 
 tests/output/
