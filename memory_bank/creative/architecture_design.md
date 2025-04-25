@@ -172,8 +172,8 @@ A facade pattern provides simplified interfaces to the complex subsystems, while
         │         │            │         
         ▼         ▼            ▼         
 ┌───────────┐ ┌────────┐ ┌──────────┐ ┌────────┐
-│  Exporter │ │ Content │ │ Enricher │ │Importer│
-│  Facade   │ │ Facade  │ │  Facade  │ │ Facade │
+│  Exporter │ │ Content│ │ Enricher │ │Importer│
+│  Facade   │ │ Facade │ │  Facade  │ │ Facade │
 └───────────┘ └────────┘ └──────────┘ └────────┘
 ```
 

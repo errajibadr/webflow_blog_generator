@@ -86,7 +86,7 @@ Your blog posts should be in a CSV file with the following columns:
 Run the generator with the following command:
 
 ```bash
-node enrich-webflow-export.js --export <webflow-export-dir> --csv <posts-csv-file> --config <config-json-file> --output <output-dir> [--port <port-number>]
+node enrich-webflow-export.js --export <webflow-export-dir> --csv <posts-csv-directory> --config <config-json-file> --output <output-dir> [--port <port-number>]
 ```
 
 Options:
@@ -101,16 +101,25 @@ Example:
 node enrich-webflow-export.js -e ./webflow-export -c ./posts.csv -f ./blog-config.json -o ./dist
 ```
 
-## 🎨 Customization
+## 🏗️ Code Architecture
 
-### Templates
-Custom templates are located in the `src/templates` directory:
-- `blog.html`: Blog listing page template
-- `blog-post.html`: Individual blog post template
+The codebase is now fully modular for maintainability and extensibility:
 
-### Styles
-- Custom styles can be added in `src/assets/css/blog-style.css`
-- Theme colors and UI settings can be configured in the config file
+- **enrich-webflow-export.js**: Minimal CLI entrypoint. Parses arguments and orchestrates the build using modules.
+- **utils.js**: General utility functions (date parsing, slugify, text truncation, content processing, etc).
+- **posts.js**: Handles reading, validating, and normalizing blog post data from CSV/JSON.
+- **blog.js**: Generates blog listing and individual post pages from normalized data.
+- **images.js**: Handles default image logic, image validation, and copying dog pictures.
+- **assets.js**: Asset copying and minification (CSS, JS, images, etc).
+- **templates.js**: Handlebars helpers and template reading/compilation.
+- **sitemap.js**: Sitemap and robots.txt generation.
+- **htaccess.js**: .htaccess file generation for Apache hosting.
+
+### How to Extend
+- Add new helpers to `utils.js` or `templates.js`.
+- Add new blog generation logic to `blog.js`.
+- Add new asset types or minification logic to `assets.js`.
+- All business logic should be in modules, not in the CLI entrypoint.
 
 ## 📝 Available Helpers
 
@@ -123,12 +132,34 @@ Handlebars helpers available in templates:
 - `getConfig`: Gets configuration values
 - `socialIcon`: Renders social media icons
 
-## 🔧 Development
+## 🔧 Development & Testing
 
 To serve the generated site locally:
 ```bash
 npm run serve
 ```
+
+### Testing
+- Run the CLI with various combinations of CSV/JSON, config, and export directories.
+- Check the output in the `dist/` directory for correct HTML, assets, and sitemaps.
+- Review the console output for warnings or errors.
+- To add tests, create test scripts or use a framework like Jest for unit testing helpers in `utils.js`, `posts.js`, etc.
+
+### Developer Notes
+- All new features should be implemented in modules, not in the CLI entrypoint.
+- Keep code DRY and modular for easy updates.
+- See `tasks.md` for the current refactor and implementation plan.
+
+## 🎨 Customization
+
+### Templates
+Custom templates are located in the `src/templates` directory:
+- `blog.html`: Blog listing page template
+- `blog-post.html`: Individual blog post template
+
+### Styles
+- Custom styles can be added in `src/assets/css/blog-style.css`
+- Theme colors and UI settings can be configured in the config file
 
 ## 📄 License
 
