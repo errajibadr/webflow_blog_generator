@@ -73,7 +73,7 @@ def run_enrich(config: ConfigDict, website_name: str, **kwargs) -> None:
     enrich_website(config, website_name, **kwargs)
 
 
-def run_import_website(config: ConfigDict, website_name: str, purge_remote: bool = False) -> None:
+def run_upload_website(config: ConfigDict, website_name: str, purge_remote: bool = False) -> None:
     """
     Run the import step.
 
@@ -127,8 +127,8 @@ def run_pipeline(
         if "enrich" in steps:
             run_enrich(config, website_name, **kwargs)
 
-        if "import" in steps:
-            run_import_website(config, website_name, purge_remote=purge_remote)
+        if "upload" in steps:
+            run_upload_website(config, website_name, purge_remote=purge_remote)
 
         logger.info(f"Pipeline completed for website: {website_name}")
     except Exception as e:

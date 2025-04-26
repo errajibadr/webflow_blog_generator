@@ -4,7 +4,7 @@ Command line argument parsing for Website SEO Orchestrator.
 
 import argparse
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import List
 
 from modules.credentials import list_available_backends, manage_credentials, set_backend
 
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--generate", action="store_true", help="Generate SEO content")
     parser.add_argument("--enrich", action="store_true", help="Enrich website with content")
     parser.add_argument(
-        "--import", dest="import_website", action="store_true", help="Import website to Hostinger"
+        "--upload", dest="upload_website", action="store_true", help="Upload website to Hostinger"
     )
     parser.add_argument(
         "--force-hta", action="store_true", help="Force overwrite of .htaccess file"
@@ -38,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--purge-remote",
         action="store_true",
-        help="Purge all files in the remote directory before import (DANGEROUS)",
+        help="Purge all files in the remote directory before upload (DANGEROUS)",
     )
 
     credential_group = parser.add_argument_group("Credential Management")
@@ -182,9 +182,9 @@ def get_steps_from_args(args: argparse.Namespace) -> List[str]:
         steps.append("generate")
     if args.enrich:
         steps.append("enrich")
-    if args.import_website:
-        steps.append("import")
+    if args.upload_website:
+        steps.append("upload")
     if args.all or not steps:  # Default to all if no steps specified
-        steps = ["export", "generate", "enrich", "import"]
+        steps = ["export", "generate", "enrich", "upload"]
 
     return steps

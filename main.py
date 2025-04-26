@@ -8,7 +8,7 @@ it with exported websites from Hostinger.
 Usage:
     python main.py --website your-site --all
     python main.py --website your-site --export --generate
-    python main.py --website your-site --enrich --import_website
+    python main.py --website your-site --enrich --upload
 """
 
 import sys

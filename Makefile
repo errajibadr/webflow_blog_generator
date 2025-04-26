@@ -33,9 +33,9 @@ generate: check-site
 enrich: check-site
 	python main.py --website $(SITE) --enrich
 
-# Run the import step
+# Run the upload step
 upload: check-site
-	python main.py --website $(SITE) --import
+	python main.py --website $(SITE) --upload
 
 # Run in dry-run mode (no changes)
 dry-run: check-site
