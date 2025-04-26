@@ -26,7 +26,13 @@ import yaml
 from dotenv import load_dotenv
 
 # Import credential manager
-import modules.cred_manager as cred_manager
+from modules.credentials import (
+    get_credential,
+    list_available_backends,
+    manage_credentials,
+    set_backend,
+    store_credential,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -137,7 +143,7 @@ def expand_env_vars(value: Any) -> Any:
             if var_type == "env":
                 # Standard environment variable
                 return os.environ.get(var_name, "")
-            elif var_type == "cred" and cred_manager:
+            elif var_type == "cred":
                 # Credential reference format: ${cred:WEBSITE_CRED_TYPE}
                 parts = var_name.split("_", 1)
                 if len(parts) != 2:
@@ -146,7 +152,7 @@ def expand_env_vars(value: Any) -> Any:
 
                 website, cred_type = parts
                 try:
-                    return cred_manager.get_credential(website, cred_type)
+                    return get_credential(website, cred_type)
                 except Exception as e:
                     logging.error(f"Error retrieving credential: {e}")
                     return ""
@@ -403,9 +409,10 @@ def main() -> None:
     # Parse command line arguments
     args = parse_args()
 
+    # Handle credential backend selection if the module is available
     if args.credential_backend:
         if args.credential_backend == "list":
-            backends = cred_manager.list_available_backends()
+            backends = list_available_backends()
             print("Available credential backends:")
             for backend in backends:
                 print(
@@ -428,16 +435,16 @@ def main() -> None:
 
             # Set the backend
             try:
-                cred_manager.set_backend(args.credential_backend, **backend_config)
+                set_backend(args.credential_backend, **backend_config)
                 print(f"Credential backend set to: {args.credential_backend}")
                 sys.exit(0)
             except Exception as e:
                 print(f"Error setting credential backend: {e}")
                 sys.exit(1)
 
-    # Handle credential management commands if the module is available
+    # Handle credential management commands
     if args.credential:
-        result = cred_manager.manage_credentials(
+        result = manage_credentials(
             action=args.credential,
             website=args.cred_website,
             cred_type=args.type,

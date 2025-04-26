@@ -21,7 +21,7 @@ import ftputil
 
 # Import credential manager (with fallback)
 try:
-    import modules.cred_manager as cred_manager
+    from modules.credentials import get_credential
 
     CRED_MANAGER_AVAILABLE = True
 except ImportError:
@@ -95,8 +95,8 @@ def export_website(config: Dict[str, Any], website_name: str) -> bool:
         if CRED_MANAGER_AVAILABLE:
             try:
                 # Get credentials from credential manager
-                username = cred_manager.get_credential(website_name, "FTP_USERNAME")
-                password = cred_manager.get_credential(website_name, "FTP_PASSWORD")
+                username = get_credential(website_name, "FTP_USERNAME")
+                password = get_credential(website_name, "FTP_PASSWORD")
                 logger.debug(f"Using credentials from credential manager for {website_name}")
             except Exception as e:
                 # Fall back to config if credential manager fails
@@ -346,8 +346,8 @@ def connect_ftp(config: Dict[str, Any], website_name: str) -> Optional[FTP]:
         # First try to get credentials from credential manager
         if CRED_MANAGER_AVAILABLE:
             try:
-                username = cred_manager.get_credential(website_name, "FTP_USERNAME")
-                password = cred_manager.get_credential(website_name, "FTP_PASSWORD")
+                username = get_credential(website_name, "FTP_USERNAME")
+                password = get_credential(website_name, "FTP_PASSWORD")
                 logger.debug(f"Using credentials from credential manager for {website_name}")
             except Exception as e:
                 # Fall back to config if credential manager fails

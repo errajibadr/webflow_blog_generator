@@ -38,8 +38,8 @@
     - [x] Create clean API in api.py
     - [x] Move CLI functions to cli.py
     - [x] Create comprehensive __init__.py for backward compatibility
-    - [x] Create backward compatibility wrapper (cred_manager.py)
-    - [ ] Update imports in other modules
+    - [x] Update imports in other modules (exporter.py, importer.py, main.py)
+    - [x] Remove legacy compatibility wrapper for simplified imports
   - [ ] Phase 2: Refactor main.py
     - [ ] Create config module for configuration handling
     - [ ] Create pipeline module for orchestration logic
@@ -70,4 +70,8 @@
   - [x] Add interactive website configuration command for easier setup
   - [x] Fix issues with special characters in passwords
   - [x] Ensure proper error handling and validation
-- [x] Create detailed refactoring plan for improved code organization 
+- [x] Create detailed refactoring plan for improved code organization
+- [x] Implement Phase 1 of refactoring (credential manager)
+  - [x] Split into modular components with clear responsibilities
+  - [x] Simplify imports by removing compatibility wrapper
+  - [x] Update dependent modules to use new package structure 

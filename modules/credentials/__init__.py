@@ -5,6 +5,11 @@ This package provides secure credential storage and retrieval with multiple back
 It maintains backward compatibility with the original cred_manager module.
 """
 
+# Register backends first to ensure they're available
+from modules.credentials.backends import register_backends
+
+registered_backends = register_backends()
+
 # Import and re-export public API
 from modules.credentials.api import (
     delete_credential,
