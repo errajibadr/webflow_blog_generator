@@ -4,8 +4,8 @@
   "description": "Enrich Webflow export with blog functionality",
   "main": "enrich-webflow-export.js",
   "scripts": {
-    "start": "node enrich-webflow-export.js --export ../workspaces/dogtolib/export --csv ../workspaces/dogtolib/content --config ../configs/dogtolib-config.json --output ../dist/dogtolib  --force-hta",
-    "start:yaml": "node enrich-webflow-export.js --export ../workspaces/dogtolib/export --csv ../workspaces/dogtolib/content --config ../website_configs/dogtolib.yaml --output ../dist/dogtolib --force-hta",
+    "start": "node enrich-webflow-export.js --export ../workspaces/dogtolib/export --blogs-repo ../workspaces/dogtolib/content --config ../configs/dogtolib-config.json --output ../dist/dogtolib  --force-hta",
+    "start:yaml": "node enrich-webflow-export.js --export ../workspaces/dogtolib/export --blogs-repo ../workspaces/dogtolib/content --config ../website_configs/dogtolib.yaml --output ../dist/dogtolib --force-hta",
     "serve": "serve ../dist/dogtolib",
     "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json,yaml,yml --exec 'npm start'",
     "watch:yaml": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json,yaml,yml --exec 'npm run start:yaml'",

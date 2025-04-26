@@ -123,12 +123,12 @@ Your blog posts should be in a CSV file with the following columns:
 Run the generator with the following command:
 
 ```bash
-node enrich-webflow-export.js --export <webflow-export-dir> --csv <posts-csv-directory> --config <config-file> --output <output-dir> [--port <port-number>]
+node enrich-webflow-export.js --export <webflow-export-dir> --blogs-repo <blog-posts-directory> --config <config-file> --output <output-dir> [--port <port-number>]
 ```
 
 Options:
 - `--export, -e`: Path to Webflow export directory (required)
-- `--csv, -c`: Path to blog posts CSV file (required)
+- `--blogs-repo, -c`: Path to directory containing blog posts (CSV, JSON, etc.) (required)
 - `--config, -f`: Path to blog config file in JSON or YAML format (required)
 - `--output, -o`: Output directory (default: 'dist')
 - `--port, -p`: Port for local testing (default: 3000)
@@ -136,10 +136,10 @@ Options:
 Example:
 ```bash
 # Using JSON config
-node enrich-webflow-export.js -e ./webflow-export -c ./posts.csv -f ./blog-config.json -o ./dist
+node enrich-webflow-export.js -e ./webflow-export --blogs-repo ./posts -f ./blog-config.json -o ./dist
 
 # Using YAML config
-node enrich-webflow-export.js -e ./webflow-export -c ./posts.csv -f ./config.yaml -o ./dist
+node enrich-webflow-export.js -e ./webflow-export --blogs-repo ./posts -f ./config.yaml -o ./dist
 ```
 
 ## 🔧 Code Architecture

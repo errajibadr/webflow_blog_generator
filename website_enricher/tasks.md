@@ -129,7 +129,7 @@ Add support for reading configuration from YAML files (e.g., @dogtolib.yaml) in 
 
 ## Checklist
 - [x] Add YAML config file support (with fallback to JSON)
-- [ ] Refactor CLI argument names for blog source to --blogs-repo
+- [x] Refactor CLI argument names for blog source to --blogs-repo
 - [x] Update config loading logic and documentation
 - [ ] Add/Update tests for config and CLI
 - [x] Update README and CLI help output

@@ -22,9 +22,9 @@ const argv = yargs(hideBin(process.argv))
     type: 'string',
     demandOption: true
   })
-  .option('csv', {
-    alias: 'c',
-    description: 'Path to directory containing blog posts CSV files',
+  .option('blogs-repo', {
+    alias: ['c', 'csv'],
+    description: 'Path to directory containing blog posts (CSV, JSON, etc.)',
     type: 'string',
     demandOption: true
   })
@@ -52,6 +52,10 @@ const argv = yargs(hideBin(process.argv))
     default: false
   })
   .help()
+  .example('$0 --export ./webflow-export --blogs-repo ./posts --config ./config.json --output ./dist',
+    'Generate blog using JSON config')
+  .example('$0 --export ./webflow-export --blogs-repo ./posts --config ./config.yaml --output ./dist',
+    'Generate blog using YAML config')
   .argv;
 
 async function main() {
@@ -63,7 +67,11 @@ async function main() {
     // Read config and inject outputDir/csvDir for downstream modules
     const config = await loadConfig(argv.config);
     config.outputDir = argv.output;
-    config.csvDir = argv.csv;
+    
+    // Use blogs-repo argument (potentially from alias csv)
+    const blogsRepo = argv['blogs-repo'];
+    config.csvDir = blogsRepo; // Keep the config key as csvDir for backward compatibility
+    
     // Register handlebars helpers
     registerHandlebarsHelpers({ formatDate, truncateText, config });
     // Generate .htaccess file
@@ -72,7 +80,7 @@ async function main() {
     await copyDogPictures(argv.output);
     // Read blog data
     console.log('\n=== Starting Post Processing ===');
-    const posts = await readAllPostFiles(argv.csv, config);
+    const posts = await readAllPostFiles(blogsRepo, config);
     console.log('=== Post Processing Complete ===\n');
     console.log('\n=== Starting Blog Generation ===');
     // Copy and generate assets
