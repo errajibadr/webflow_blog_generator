@@ -403,7 +403,6 @@ def main() -> None:
     # Parse command line arguments
     args = parse_args()
 
-    # Handle credential backend selection if the module is available
     if args.credential_backend:
         if args.credential_backend == "list":
             backends = cred_manager.list_available_backends()
