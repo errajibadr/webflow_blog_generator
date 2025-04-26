@@ -8,3 +8,4 @@ selenium>=4.15.0       # For web automation (Hostinger interaction)
 webdriver-manager>=4.0.1 # Webdriver management for Selenium
 ftputil>=5.0.4         # For FTP-based website exports 
 pydantic>=2.5.2        # For data validation and settings management
+cryptography==44.0.2

@@ -9,57 +9,157 @@ This module handles exporting websites from Hostinger, using one of these method
 
 from __future__ import annotations
 
+import ftplib
 import logging
 import os
 import shutil
+from ftplib import FTP
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import ftputil
 
+# Import credential manager (with fallback)
+try:
+    import modules.cred_manager as cred_manager
 
-def export_website(config: Dict[str, Any], website_name: str) -> Path:
-    """
-    Export a website from Hostinger.
+    CRED_MANAGER_AVAILABLE = True
+except ImportError:
+    CRED_MANAGER_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
+
+
+def _simulate_export(config: Dict[str, Any], website_name: str) -> bool:
+    """Simulate exporting website content for dry runs.
 
     Args:
-        config: The loaded configuration
-        website_name: Name of the website to export
+        config: Config dictionary
+        website_name: Name of the website
 
     Returns:
-        Path to the exported website files
+        bool: Always returns True
     """
-    logger = logging.getLogger("orchestrator.exporter")
-    website_config = config["website"]
+    logger = logging.getLogger("exporter")
 
-    # Determine the workspace directory
-    workspace_name = website_config["website"].get("workspace", website_name)
-    workspace_dir = Path(config["paths"]["workspaces"]) / workspace_name
-    export_dir = workspace_dir / "export"
+    # Get export directory from config
+    export_dir = Path(config["paths"]["workspaces"]) / website_name / "export"
+    logger.debug(f"Export directory: {export_dir}")
 
     # Ensure export directory exists
-    os.makedirs(export_dir, exist_ok=True)
+    export_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Exporting website: {website_name} to {export_dir}")
+    # Create a dummy file to simulate export
+    with open(export_dir / "dry-run-export.txt", "w") as f:
+        f.write(f"Simulated export of {website_name} at {export_dir}\n")
+        f.write("This is a dry run, no actual FTP connection was made.\n")
+
+    logger.info(f"Completed simulated export for website: {website_name}")
+    return True
+
+
+def export_website(config: Dict[str, Any], website_name: str) -> bool:
+    """Export website content from remote server.
+
+    Args:
+        config: Config dictionary
+        website_name: Name of the website
+
+    Returns:
+        bool: True if export successful, False otherwise
+    """
+    logger = logging.getLogger("exporter")
+    logger.info(f"Exporting website {website_name}...")
+
+    # Check if in dry run mode
+    if config.get("dry_run"):
+        return _simulate_export(config, website_name)
+
+    # Get export directory from config
+    export_dir = Path(config["paths"]["workspaces"]) / website_name / "export"
+    logger.debug(f"Export directory: {export_dir}")
+
+    # Ensure export directory exists and is empty
+    if export_dir.exists():
+        shutil.rmtree(export_dir)
+    export_dir.mkdir(parents=True)
+
+    # Get website config
+    website_config = config["website"]
+    hostinger_config = website_config.get("hostinger", {})
+    ftp_host = hostinger_config.get("host", f"ftp.{website_config['website'].get('domain', '')}")
+    remote_dir = hostinger_config.get("remote_dir", "/")
 
     try:
-        # Get export method from config or use default priority order
-        export_method = website_config.get("export", {}).get("method", "ftp")
+        # Connect to FTP server using credential manager or fallback to config
+        if CRED_MANAGER_AVAILABLE:
+            try:
+                # Get credentials from credential manager
+                username = cred_manager.get_credential(website_name, "FTP_USERNAME")
+                password = cred_manager.get_credential(website_name, "FTP_PASSWORD")
+                logger.debug(f"Using credentials from credential manager for {website_name}")
+            except Exception as e:
+                # Fall back to config if credential manager fails
+                logger.debug(f"Credential manager failed, falling back to config: {e}")
+                username = hostinger_config.get("username")
+                password = hostinger_config.get("password")
+        else:
+            # Use credentials from config if credential manager is not available
+            username = hostinger_config.get("username")
+            password = hostinger_config.get("password")
 
-        if export_method == "ftp":
-            success = _export_via_ftp(config, website_name, export_dir)
-        elif export_method == "simulate":
-            success = simulate_export(config, website_name)
+        if not all([ftp_host, username, password]):
+            logger.error(
+                "Missing FTP credentials. Please check your configuration or use the credential manager."
+            )
+            return False
 
-        if not success:
-            raise RuntimeError(f"Failed to export website: {website_name}")
+        # Connect to FTP server with timeout
+        with ftputil.FTPHost(ftp_host, username, password, timeout=20) as ftp_host:
+            # Check if the specified remote_dir exists
+            if not ftp_host.path.exists(remote_dir):
+                logger.error(f"Remote directory {remote_dir} does not exist.")
+                return False
 
-        logger.info(f"Successfully exported website: {website_name} to {export_dir}")
-        return export_dir
+            # Get all files recursively from the remote directory
+            logger.info(f"Starting download from {remote_dir}...")
 
+            def _download_tree(remote_path, local_path):
+                """Download a directory tree recursively."""
+                # Create local directory
+                local_dir = Path(local_path)
+                local_dir.mkdir(exist_ok=True)
+
+                # List remote directory
+                for item in ftp_host.listdir(remote_path):
+                    remote_item = ftp_host.path.join(remote_path, item)
+                    local_item = os.path.join(local_path, item)
+
+                    # Skip directory links that might cause infinite recursion
+                    if ftp_host.path.islink(remote_item):
+                        logger.debug(f"Skipping symbolic link: {remote_item}")
+                        continue
+
+                    # Download directory recursively
+                    if ftp_host.path.isdir(remote_item):
+                        logger.debug(f"Processing directory: {remote_item}")
+                        _download_tree(remote_item, local_item)
+                    # Download file
+                    else:
+                        logger.debug(f"Downloading: {remote_item}")
+                        ftp_host.download(remote_item, local_item)
+
+            # Start recursive download
+            _download_tree(remote_dir, export_dir)
+            logger.info(f"Website content exported to: {export_dir}")
+            return True
+
+    except ftplib.all_errors as e:
+        logger.error(f"FTP error: {e}")
+        return False
     except Exception as e:
-        logger.error(f"Export failed: {e}")
-        raise RuntimeError(f"Failed to export website: {e}")
+        logger.error(f"Error exporting website: {e}")
+        return False
 
 
 def _export_via_ftp(config: Dict[str, Any], website_name: str, export_dir: Path) -> bool:
@@ -81,15 +181,13 @@ def _export_via_ftp(config: Dict[str, Any], website_name: str, export_dir: Path)
     # Get FTP configuration
     hostinger_config = website_config.get("hostinger", {})
     ftp_host = hostinger_config.get("host", f"ftp.{website_config['website'].get('domain', '')}")
-    ftp_user = hostinger_config["username"]
-    ftp_password = hostinger_config["password"]
     remote_dir = hostinger_config.get("remote_dir", "/")
 
     logger.info(f"Starting FTP export from {ftp_host}{remote_dir}")
 
     try:
         # Connect to FTP server with timeout
-        with ftputil.FTPHost(ftp_host, ftp_user, ftp_password, timeout=20) as ftp_host:
+        with ftputil.FTPHost(ftp_host, timeout=20) as ftp_host:
             # Check if the specified remote_dir exists
             if not ftp_host.path.exists(remote_dir):
                 logger.error(f"Specified remote directory {remote_dir} does not exist!")
@@ -228,3 +326,55 @@ def simulate_export(config: Dict[str, Any], website_name: str) -> bool:
 
     logger.info(f"Completed simulated export for website: {website_name}")
     return True
+
+
+def connect_ftp(config: Dict[str, Any], website_name: str) -> Optional[FTP]:
+    """Connect to FTP server using credentials from config or credential manager.
+
+    Args:
+        config: Configuration dictionary
+        website_name: Name of the website
+
+    Returns:
+        FTP connection object or None if connection fails
+    """
+    # Get FTP settings from config
+    try:
+        ftp_config = config["website"].get("ftp", {})
+        host = ftp_config.get("host")
+
+        # First try to get credentials from credential manager
+        if CRED_MANAGER_AVAILABLE:
+            try:
+                username = cred_manager.get_credential(website_name, "FTP_USERNAME")
+                password = cred_manager.get_credential(website_name, "FTP_PASSWORD")
+                logger.debug(f"Using credentials from credential manager for {website_name}")
+            except Exception as e:
+                # Fall back to config if credential manager fails
+                logger.debug(f"Credential manager failed, falling back to config: {e}")
+                username = ftp_config.get("username")
+                password = ftp_config.get("password")
+        else:
+            # Use credentials from config if credential manager is not available
+            username = ftp_config.get("username")
+            password = ftp_config.get("password")
+
+        if not all([host, username, password]):
+            logger.error(
+                "Missing FTP credentials. Please check your configuration or use the credential manager."
+            )
+            return None
+
+        # Connect to FTP server
+        ftp = FTP()
+        ftp.connect(host)
+        ftp.login(username, password)
+        logger.info(f"Connected to FTP server: {host}")
+        return ftp
+
+    except ftplib.all_errors as e:
+        logger.error(f"FTP connection error: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Error connecting to FTP: {e}")
+        return None

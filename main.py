@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -23,6 +24,9 @@ from typing import Any, Dict, List, Optional, Union
 import coloredlogs
 import yaml
 from dotenv import load_dotenv
+
+# Import credential manager
+import modules.cred_manager as cred_manager
 
 # Load environment variables from .env file
 load_dotenv()
@@ -104,25 +108,59 @@ def load_config(config_path: Union[str, Path], website_name: Optional[str] = Non
     return config
 
 
-def expand_env_vars(config: Any) -> Any:
-    """
-    Recursively expand environment variables in config values.
+def expand_env_vars(value: Any) -> Any:
+    """Recursively expand environment variables and credential references in the given value.
+
+    Supports the formats:
+    - ${ENV_VAR}
+    - ${env:ENV_VAR}
+    - ${cred:WEBSITE_CRED_TYPE}
 
     Args:
-        config: Configuration object (can be dict, list, or primitive value)
+        value: The value to process (can be dict, list, or string)
 
     Returns:
-        Configuration with environment variables expanded
+        Any: The processed value with environment variables expanded
     """
-    if isinstance(config, dict):
-        return {k: expand_env_vars(v) for k, v in config.items()}
-    elif isinstance(config, list):
-        return [expand_env_vars(i) for i in config]
-    elif isinstance(config, str) and config.startswith("${") and config.endswith("}"):
-        env_var = config[2:-1]
-        return os.environ.get(env_var, config)
+    # Handle different value types
+    if isinstance(value, dict):
+        return {k: expand_env_vars(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [expand_env_vars(v) for v in value]
+    elif isinstance(value, str):
+        # First try our specific formats
+        def replace_var(match):
+            full_match = match.group(0)
+            var_type = match.group(1) if match.group(1) else "env"
+            var_name = match.group(2)
+
+            if var_type == "env":
+                # Standard environment variable
+                return os.environ.get(var_name, "")
+            elif var_type == "cred" and cred_manager:
+                # Credential reference format: ${cred:WEBSITE_CRED_TYPE}
+                parts = var_name.split("_", 1)
+                if len(parts) != 2:
+                    logging.warning(f"Invalid credential reference format: {full_match}")
+                    return ""
+
+                website, cred_type = parts
+                try:
+                    return cred_manager.get_credential(website, cred_type)
+                except Exception as e:
+                    logging.error(f"Error retrieving credential: {e}")
+                    return ""
+
+            return os.environ.get(var_name, "")
+
+        # Match ${var}, ${env:var} or ${cred:var}
+        pattern = r"\${(?:(env|cred):)?([A-Za-z0-9_]+)}"
+        value = re.sub(pattern, replace_var, value)
+
+        # Then try standard format as fallback
+        return os.path.expandvars(value)
     else:
-        return config
+        return value
 
 
 def ensure_workspace_dirs(config: ConfigDict, website_name: str) -> Path:
@@ -277,15 +315,15 @@ def run_pipeline(
         raise
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     """
-    Main entry point.
+    Parse command line arguments.
 
-    Parses command line arguments, loads configuration, and runs the pipeline.
+    Returns:
+        Parsed command line arguments
     """
-    # Set up command line argument parser
     parser = argparse.ArgumentParser(description="Website SEO Orchestrator")
-    parser.add_argument("--website", required=True, help="Website name (must match a config file)")
+    parser.add_argument("--website", help="Website name (must match a config file)")
     parser.add_argument("--config", default="config.yaml", help="Path to main config file")
 
     # Steps to run
@@ -309,21 +347,139 @@ def main() -> None:
         help="Purge all files in the remote directory before import (DANGEROUS)",
     )
 
-    args = parser.parse_args()
+    credential_group = parser.add_argument_group("Credential Management")
+    credential_group.add_argument(
+        "--credential",
+        choices=["add", "remove", "list", "test", "configure"],
+        help="Credential management action",
+    )
+
+    credential_group.add_argument(
+        "--website-cred", help="Website name for credential action", dest="cred_website"
+    )
+
+    credential_group.add_argument(
+        "--type", help="Type of credential (e.g., FTP_USERNAME, FTP_PASSWORD)"
+    )
+
+    credential_group.add_argument("--value", help="Value for the credential")
+
+    credential_group.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Prompt for credential value instead of command line",
+    )
+
+    credential_group.add_argument(
+        "--force", action="store_true", help="Skip confirmation for dangerous operations"
+    )
+
+    credential_group.add_argument(
+        "--show-values",
+        action="store_true",
+        help="Show credential values when listing (requires confirmation)",
+    )
+
+    # Backend management
+    backend_group = parser.add_argument_group("Credential Backend Management")
+    backend_group.add_argument(
+        "--credential-backend",
+        help='Select credential backend (file, env, vault) or "list" to show available backends',
+    )
+
+    backend_group.add_argument(
+        "--backend-config",
+        action="append",
+        help="Backend configuration in KEY=VALUE format (can specify multiple times)",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    """
+    Run the main orchestration pipeline.
+    """
+    # Parse command line arguments
+    args = parse_args()
+
+    # Handle credential backend selection if the module is available
+    if args.credential_backend:
+        if args.credential_backend == "list":
+            backends = cred_manager.list_available_backends()
+            print("Available credential backends:")
+            for backend in backends:
+                print(
+                    f"- {backend['name']}{' (current)' if backend['current'] else ''}: {backend['description']}"
+                )
+            sys.exit(0)
+        else:
+            # Parse backend config if provided
+            backend_config = {}
+            if args.backend_config:
+                for config_item in args.backend_config:
+                    if "=" in config_item:
+                        key, value = config_item.split("=", 1)
+                        backend_config[key] = value
+                    else:
+                        print(
+                            f"Error: Invalid backend config format: {config_item}. Use KEY=VALUE format."
+                        )
+                        sys.exit(1)
+
+            # Set the backend
+            try:
+                cred_manager.set_backend(args.credential_backend, **backend_config)
+                print(f"Credential backend set to: {args.credential_backend}")
+                sys.exit(0)
+            except Exception as e:
+                print(f"Error setting credential backend: {e}")
+                sys.exit(1)
+
+    # Handle credential management commands if the module is available
+    if args.credential:
+        result = cred_manager.manage_credentials(
+            action=args.credential,
+            website=args.cred_website,
+            cred_type=args.type,
+            value=args.value,
+            interactive=args.interactive,
+            force=args.force,
+            show_values=args.show_values,
+            host=args.website,  # Use website as host if needed
+        )
+
+        print(result)
+        sys.exit(0)
+
+    # Load config
+    try:
+        config = load_config(args.config, args.website)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    # Set up logging
+    logger = setup_logging(config)
+
+    # Set verbosity
+    if args.verbose:
+        coloredlogs.install(level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+
+    # Handle dry run flag
+    if args.dry_run:
+        config["dry_run"] = True
+        logger.info("Running in dry run mode - no changes will be made")
 
     try:
-        # Load config
-        config = load_config(args.config, args.website)
+        # Validate website
+        if not args.website:
+            logger.error("Website name is required. Use --website WEBSITE")
+            sys.exit(1)
 
-        # Set verbose mode if requested
-        if args.verbose:
-            config["logging"]["level"] = "DEBUG"
-
-        # Set up logging
-        logger = setup_logging(config)
-
-        # Determine steps to run
-        steps: List[str] = []
+        # Determine which steps to run
+        steps = []
         if args.export:
             steps.append("export")
         if args.generate:
@@ -334,23 +490,17 @@ def main() -> None:
             steps.append("import")
         if args.all or not steps:  # Default to all if no steps specified
             steps = ["export", "generate", "enrich", "import"]
-        kwargs = {
-            "force-hta": args.force_hta,
-        }
 
-        logger.info(f"Running steps: {', '.join(steps)}")
-
-        # Set dry run flag
-        config["dry_run"] = args.dry_run
-        if args.dry_run:
-            logger.info("DRY RUN MODE - No changes will be made")
-
-        # Run pipeline
-        run_pipeline(config, args.website, steps, purge_remote=args.purge_remote, **kwargs)
+        # Run the pipeline
+        run_pipeline(
+            config, args.website, steps, purge_remote=args.purge_remote, force_hta=args.force_hta
+        )
 
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logger.exception(f"Error in pipeline: {e}")
         sys.exit(1)
+
+    logger.info("Pipeline completed successfully")
 
 
 if __name__ == "__main__":

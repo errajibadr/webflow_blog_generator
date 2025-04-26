@@ -9,14 +9,20 @@ This module handles importing websites to Hostinger through either:
 
 from __future__ import annotations
 
+import ftplib
 import logging
 import os
 import time
+from ftplib import FTP
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import ftputil
 import ftputil.error
+
+import modules.cred_manager as cred_manager
+
+logger = logging.getLogger(__name__)
 
 
 def import_website(config: Dict[str, Any], website_name: str, purge_remote: bool = False) -> bool:
@@ -31,54 +37,106 @@ def import_website(config: Dict[str, Any], website_name: str, purge_remote: bool
     Returns:
         True if successful, False otherwise
     """
-    logger = logging.getLogger("orchestrator.importer")
-    website_config = config["website"]
+    logger.info(f"Importing website {website_name}...")
 
-    # Determine the workspace directory
-    workspace_name = website_config["website"].get("workspace", website_name)
-    workspace_dir = Path(config["paths"]["workspaces"]) / workspace_name
-    output_dir = workspace_dir / "output"
-    content_dir = workspace_dir / "content"
+    # Check if in dry run mode
+    if config.get("dry_run"):
+        logger.info(f"DRY RUN: Would import website {website_name}")
+        return True
 
-    # Verify that output directory exists
+    # Get import source directory from config
+    workspace = config["website"]["website"].get("workspace", website_name)
+    output_dir = Path(config["paths"]["workspaces"]) / workspace / "output"
+
     if not output_dir.exists():
         logger.error(f"Output directory does not exist: {output_dir}")
-        raise FileNotFoundError(f"Output directory does not exist: {output_dir}")
+        return False
 
-    # List of directories to import with their configuration
-    # (source_dir, preserve_parent_dir)
-    import_dirs = [(output_dir, False)]  # Don't preserve "output" in path
+    # Get FTP settings from config
+    website_config = config["website"]
+    hostinger_config = website_config.get("hostinger", {})
+    remote_dir = hostinger_config.get("remote_dir", "/")
 
-    if content_dir.exists():
-        logger.info(f"Content directory found: {content_dir}, will import files from here as well")
-        # Preserve "content" directory in path structure
-        import_dirs.append((content_dir, True))
-
-    # Log the import source directories
-    source_dirs_str = ", ".join(str(d[0]) for d in import_dirs)
-    logger.info(f"Importing website: {website_name} from {source_dirs_str}")
+    # Connect to FTP using credential manager or fallback to config
     try:
-        # Get import method from config or use default priority order
-        import_method = website_config.get("import", {}).get("method", "ftp")
+        try:
+            # Get credentials from credential manager
+            username = cred_manager.get_credential(website_name, "FTP_USERNAME")
+            password = cred_manager.get_credential(website_name, "FTP_PASSWORD")
+            logger.debug(f"Using credentials from credential manager for {website_name}")
 
-        if import_method == "ftp":
-            success = _import_via_ftp(config, import_dirs, purge_remote=purge_remote)
-        elif import_method == "simulate":
-            success = simulate_import(config, website_name, [d[0] for d in import_dirs])
-        else:
-            logger.error(f"Unknown import method: {import_method}")
+        except Exception as e:
+            # Fall back to config if credential manager fails
+            logger.debug(f"Credential manager failed, falling back to config: {e}")
+            username = hostinger_config.get("username")
+            password = hostinger_config.get("password")
+
+        # Get FTP host
+        ftp_host = hostinger_config.get(
+            "host", f"ftp.{website_config['website'].get('domain', '')}"
+        )
+
+        if not all([ftp_host, username, password]):
+            logger.error(
+                "Missing FTP credentials. Please check your configuration or use the credential manager."
+            )
             return False
 
-        if success:
-            logger.info(f"Successfully imported website: {website_name}")
+        # TODO: Update this to use ftputil instead of raw FTP
+        import ftputil
+
+        # Connect to FTP server
+        with ftputil.FTPHost(ftp_host, username, password, timeout=30) as ftp_host:
+            # Check if remote directory exists
+            if not ftp_host.path.exists(remote_dir):
+                logger.error(f"Remote directory does not exist: {remote_dir}")
+                return False
+
+            # Purge remote directory if requested
+            if purge_remote:
+                logger.warning(f"Purging remote directory: {remote_dir}")
+                # Recursively delete all files and directories
+                for item in ftp_host.listdir(remote_dir):
+                    remote_path = ftp_host.path.join(remote_dir, item)
+                    if ftp_host.path.isdir(remote_path):
+                        ftp_host.rmtree(remote_path)
+                    else:
+                        ftp_host.remove(remote_path)
+
+            # Upload files
+            logger.info(f"Starting upload to {remote_dir}...")
+
+            def _upload_directory(local_path, remote_path):
+                """Upload a directory recursively."""
+                # Ensure remote directory exists
+                if not ftp_host.path.exists(remote_path):
+                    ftp_host.mkdir(remote_path)
+
+                # Upload all files and directories
+                for item in os.listdir(local_path):
+                    local_item = os.path.join(local_path, item)
+                    remote_item = ftp_host.path.join(remote_path, item)
+
+                    # Upload directory recursively
+                    if os.path.isdir(local_item):
+                        logger.debug(f"Processing directory: {local_item}")
+                        _upload_directory(local_item, remote_item)
+                    # Upload file
+                    else:
+                        logger.debug(f"Uploading: {local_item}")
+                        ftp_host.upload(local_item, remote_item)
+
+            # Start recursive upload
+            _upload_directory(output_dir, remote_dir)
+            logger.info(f"Website content imported to {remote_dir}")
             return True
-        else:
-            logger.error(f"Import failed for website: {website_name}")
-            return False
 
+    except ftplib.all_errors as e:
+        logger.error(f"FTP error: {e}")
+        return False
     except Exception as e:
-        logger.error(f"Import failed: {e}")
-        raise RuntimeError(f"Failed to import website: {e}")
+        logger.error(f"Error importing website: {e}")
+        return False
 
 
 def _purge_remote_dir(ftp_host, remote_dir):
@@ -320,3 +378,58 @@ def simulate_import(
 
     logger.info(f"Completed simulated import for website: {website_name}")
     return True
+
+
+def _connect_ftp(config: Dict[str, Any], website_name: str) -> Optional[FTP]:
+    """Connect to FTP server using credentials from config or credential manager.
+
+    Args:
+        config: Configuration dictionary
+        website_name: Name of the website
+
+    Returns:
+        FTP connection object or None if connection fails
+    """
+    # Get FTP settings from config
+    try:
+        website_config = config["website"]
+        hostinger_config = website_config.get("hostinger", {})
+        ftp_host = hostinger_config.get(
+            "host", f"ftp.{website_config['website'].get('domain', '')}"
+        )
+
+        # First try to get credentials from credential manager
+        if CRED_MANAGER_AVAILABLE:
+            try:
+                username = cred_manager.get_credential(website_name, "FTP_USERNAME")
+                password = cred_manager.get_credential(website_name, "FTP_PASSWORD")
+                logger.debug(f"Using credentials from credential manager for {website_name}")
+            except Exception as e:
+                # Fall back to config if credential manager fails
+                logger.debug(f"Credential manager failed, falling back to config: {e}")
+                username = hostinger_config.get("username")
+                password = hostinger_config.get("password")
+        else:
+            # Use credentials from config if credential manager is not available
+            username = hostinger_config.get("username")
+            password = hostinger_config.get("password")
+
+        if not all([ftp_host, username, password]):
+            logger.error(
+                "Missing FTP credentials. Please check your configuration or use the credential manager."
+            )
+            return None
+
+        # Connect to FTP server
+        ftp = FTP()
+        ftp.connect(ftp_host)
+        ftp.login(username, password)
+        logger.info(f"Connected to FTP server: {ftp_host}")
+        return ftp
+
+    except ftplib.all_errors as e:
+        logger.error(f"FTP connection error: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Error connecting to FTP: {e}")
+        return None
