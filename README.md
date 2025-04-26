@@ -8,6 +8,8 @@ A Python-based orchestrator that streamlines the process of generating SEO conte
 - Integrates with existing content generation and website enricher modules
 - Supports managing multiple websites with different configurations
 - YAML-based configuration for maximum readability and flexibility
+- Secure credential management with multiple backend options
+- Modular architecture for improved maintainability
 - Detailed logging and error handling
 - Dry-run capability for testing without making changes
 
@@ -40,6 +42,12 @@ cp examples/website_configs/example.yaml website_configs/your-site.yaml
 # Edit with your settings
 nano config.yaml
 nano website_configs/your-site.yaml
+```
+
+4. Set up credentials:
+```bash
+# Configure credentials securely (interactive mode)
+python main.py --credential configure --website-cred your-site --interactive
 ```
 
 ## ⚙️ Configuration
@@ -75,9 +83,10 @@ website:
   workspace: mywebsite  # Name of the workspace directory
   
 hostinger:
-  username: your-hostinger-username
-  password: your-hostinger-password
-  # Can use environment variables like ${HOSTINGER_PASSWORD}
+  # Secure credential references
+  username: ${cred:MYWEBSITE_FTP_USERNAME}
+  password: ${cred:MYWEBSITE_FTP_PASSWORD}
+  # Can also use environment variables like ${env:HOSTINGER_PASSWORD}
   
 content_generation:
   topics_file: website/topics_data/mywebsite_topics.csv
@@ -122,13 +131,37 @@ ui:
 
 ## 💻 Usage
 
-### Running the Full Pipeline
+### Using the Makefile
+
+The project includes a Makefile for common operations:
+
+```bash
+# Run the full pipeline for a website
+make run SITE=your-site
+
+# Run individual steps
+make export SITE=your-site
+make generate SITE=your-site
+make enrich SITE=your-site
+make import SITE=your-site
+
+# Dry run (no changes)
+make dry-run SITE=your-site
+
+# Manage credentials
+make configure-credentials SITE=your-site
+make list-credentials
+```
+
+### Running Directly
+
+#### Running the Full Pipeline
 
 ```bash
 python main.py --website your-site --all
 ```
 
-### Running Individual Steps
+#### Running Individual Steps
 
 Export website from Hostinger:
 ```bash
@@ -150,6 +183,35 @@ Import website to Hostinger:
 python main.py --website your-site --import
 ```
 
+#### Credential Management
+
+List available credential backends:
+```bash
+python main.py --credential-backend list
+```
+
+Select a credential backend:
+```bash
+python main.py --credential-backend file  # File-based storage (default)
+python main.py --credential-backend env   # Environment variables
+```
+
+Configure credentials interactively:
+```bash
+python main.py --credential configure --website-cred your-site --interactive
+```
+
+Add a specific credential:
+```bash
+python main.py --credential add --website-cred your-site --type FTP_USERNAME --value yourusername
+python main.py --credential add --website-cred your-site --type FTP_PASSWORD --interactive
+```
+
+List credentials:
+```bash
+python main.py --credential list
+```
+
 ### Advanced Options
 
 ```bash
@@ -161,6 +223,9 @@ python main.py --website your-site --all --config path/to/config.yaml
 
 # Verbose logging
 python main.py --website your-site --all --verbose
+
+# Purge remote files before import (use with caution!)
+python main.py --website your-site --import --purge-remote
 ```
 
 ## 📁 Project Structure
@@ -169,11 +234,29 @@ python main.py --website your-site --all --verbose
 website-seo-orchestrator/
 ├── main.py                  # Main orchestrator script
 ├── config.yaml              # Global configuration
+├── Makefile                 # Common operations
 ├── requirements.txt         # Python dependencies
 ├── modules/                 # Python modules
 │   ├── __init__.py
+│   ├── cli/                 # Command-line interface
+│   │   ├── __init__.py
+│   │   └── parser.py        # Argument parsing
+│   ├── config/              # Configuration handling
+│   │   ├── __init__.py
+│   │   ├── loader.py        # Config loading and processing
+│   │   └── logging.py       # Logging setup
+│   ├── credentials/         # Credential management
+│   │   ├── __init__.py
+│   │   ├── api.py           # Public API
+│   │   ├── backends/        # Storage backends
+│   │   ├── cli.py           # CLI commands
+│   │   ├── manager.py       # Backend management
+│   │   └── types.py         # Type definitions
+│   ├── pipeline/            # Pipeline orchestration
+│   │   ├── __init__.py
+│   │   └── runner.py        # Step execution
 │   ├── exporter.py          # Website export module
-│   ├── content_generator.py # Content generation wrapper
+│   ├── content_generator/   # Content generation wrapper
 │   ├── enricher.py          # Website enricher wrapper
 │   └── importer.py          # Website import module
 ├── website_configs/         # Website-specific configs
@@ -214,20 +297,64 @@ The orchestrator follows these main steps:
    - Uploads the enriched website back to Hostinger
    - Handles any necessary database configurations
 
+## 🔐 Credential Management
+
+The orchestrator includes a secure credential management system with multiple storage backends:
+
+### Storage Backends
+
+- **File Backend**: Encrypts credentials and stores them in local files (default)
+- **Environment Backend**: Uses environment variables for containerized deployments
+- **Vault Backend**: (Planned) Integration with HashiCorp Vault for enterprise deployments
+
+### Credential References
+
+You can use credential references in your configuration files with the following format:
+```
+${cred:WEBSITE_CREDENTIAL_TYPE}
+```
+
+For example:
+```yaml
+hostinger:
+  username: ${cred:MYWEBSITE_FTP_USERNAME}
+  password: ${cred:MYWEBSITE_FTP_PASSWORD}
+```
+
+This approach enhances security by:
+1. Keeping sensitive data out of configuration files
+2. Enabling secure storage with encryption
+3. Supporting different storage methods for different environments
+
 ## ⚠️ Troubleshooting
 
 ### Common Issues
 
-- **Hostinger Authentication Errors**: Check your username and password in the website config
+- **Hostinger Authentication Errors**: Check your credentials with `python main.py --credential test --website-cred your-site`
 - **Content Generation Fails**: Ensure your topics file exists and has the correct format
 - **Enricher Fails**: Check that Node.js is installed and paths are correct
 - **Import Fails**: Verify Hostinger permissions and connectivity
+- **Credential Errors**: Make sure you've properly set up credentials with the `--credential configure` command
 
 ### Logs
 
 Check detailed logs in the `logs/` directory for more information about errors.
 
 ## 🛠️ Development
+
+### Modular Architecture
+
+The codebase follows a modular structure:
+- **CLI Module**: Handles command-line argument parsing and user interaction
+- **Config Module**: Manages configuration loading and processing
+- **Credentials Module**: Provides secure credential storage and retrieval
+- **Pipeline Module**: Orchestrates the execution of pipeline steps
+
+This architecture makes it easier to:
+- Add new features without modifying existing code
+- Replace components with alternative implementations
+- Test individual components in isolation
+- Understand and maintain the codebase
 
 ### Adding Support for New Hosting Providers
 
