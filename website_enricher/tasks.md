@@ -91,4 +91,53 @@ Testing & Documentation
 ## Current Status
 - Phase: Planning
 - Status: In Progress
-- Blockers: None 
+- Blockers: None
+
+---
+
+# Feature: YAML Config Support & CLI Argument Improvements
+
+## Description
+Add support for reading configuration from YAML files (e.g., @dogtolib.yaml) in addition to the current JSON config (which remains as legacy). Refactor CLI argument for blog content source from ambiguous names (like --csv) to --blogs-repo for clarity and future flexibility.
+
+## Requirements Analysis
+- Support config files in YAML format (e.g., dogtolib.yaml) using js-yaml.
+- Maintain backward compatibility with JSON config files.
+- Update CLI argument for blog source to --blogs-repo.
+- Update documentation and help output to reflect new options.
+- Refactor config loading logic into a dedicated module (config.js).
+- Add validation and clear error messages for config loading.
+- Add tests for config loading and CLI argument parsing.
+
+## Components Affected
+- enrich-webflow-export.js (CLI entrypoint)
+- config.js (new or updated module for config loading)
+- posts.js, utils.js (if they read config directly)
+- Documentation (README, CLI help, code comments)
+- Test files (if present)
+
+## Implementation Steps
+1. Add YAML config file support (with fallback to JSON)
+2. Refactor CLI argument names for blog source to --blogs-repo
+3. Refactor config loading logic and documentation
+4. Add/Update tests for config and CLI
+5. Update README and CLI help output
+
+## Challenges & Mitigations
+- Breaking existing workflows using JSON or old argument names: maintain backward compatibility and provide clear migration documentation.
+- YAML parsing errors or schema mismatches: add validation and user-friendly error messages.
+
+## Checklist
+- [x] Add YAML config file support (with fallback to JSON)
+- [ ] Refactor CLI argument names for blog source to --blogs-repo
+- [x] Update config loading logic and documentation
+- [ ] Add/Update tests for config and CLI
+- [x] Update README and CLI help output
+
+## Easy Improvements
+- Modularize config loading for easier future extension (e.g., TOML, ENV).
+- Add example config files (YAML/JSON) to the repo.
+- Use descriptive CLI argument names and provide examples in help output.
+- Add a --config argument to specify config file path/type explicitly.
+
+---

@@ -5,9 +5,12 @@
   "main": "enrich-webflow-export.js",
   "scripts": {
     "start": "node enrich-webflow-export.js --export ../workspaces/dogtolib/export --csv ../workspaces/dogtolib/content --config ../configs/dogtolib-config.json --output ../dist/dogtolib  --force-hta",
+    "start:yaml": "node enrich-webflow-export.js --export ../workspaces/dogtolib/export --csv ../workspaces/dogtolib/content --config ../website_configs/dogtolib.yaml --output ../dist/dogtolib --force-hta",
     "serve": "serve ../dist/dogtolib",
-    "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json --exec 'npm start'",
-    "dev": "concurrently \"npm run watch\" \"npm run serve\""
+    "watch": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json,yaml,yml --exec 'npm start'",
+    "watch:yaml": "nodemon --watch src --watch enrich-webflow-export.js -e js,html,css,svg,json,yaml,yml --exec 'npm run start:yaml'",
+    "dev": "concurrently \"npm run watch\" \"npm run serve\"",
+    "dev:yaml": "concurrently \"npm run watch:yaml\" \"npm run serve\""
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
@@ -15,6 +18,7 @@
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
     "handlebars": "^4.7.8",
+    "js-yaml": "^4.1.0",
     "sitemap": "^7.1.1",
     "yargs": "^17.7.2"
   },

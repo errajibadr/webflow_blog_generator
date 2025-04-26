@@ -12,6 +12,7 @@ const { copyDogPictures } = require('./images');
 const { readAllPostFiles } = require('./posts');
 const { generateBlogListing, generateBlogPosts } = require('./blog');
 const { formatDate, truncateText } = require('./utils');
+const { loadConfig } = require('./config');
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -29,7 +30,7 @@ const argv = yargs(hideBin(process.argv))
   })
   .option('config', {
     alias: 'f',
-    description: 'Path to blog config JSON file',
+    description: 'Path to blog config file (JSON or YAML)',
     type: 'string',
     demandOption: true
   })
@@ -53,11 +54,6 @@ const argv = yargs(hideBin(process.argv))
   .help()
   .argv;
 
-async function readConfig(filePath) {
-  const content = await fs.readFile(filePath, 'utf-8');
-  return JSON.parse(content);
-}
-
 async function main() {
   try {
     // Create output directory
@@ -65,7 +61,7 @@ async function main() {
     // Copy Webflow export
     await fs.copy(argv.export, argv.output);
     // Read config and inject outputDir/csvDir for downstream modules
-    const config = await readConfig(argv.config);
+    const config = await loadConfig(argv.config);
     config.outputDir = argv.output;
     config.csvDir = argv.csv;
     // Register handlebars helpers

@@ -1,0 +1,73 @@
+# Example full website configuration in YAML format
+website:
+  name: dogtolib
+  domain: dogtolib.com
+  workspace: dogtolib
+  locale: fr
+  
+hostinger:
+  host: ftp.dogtolib.com
+  username: ${HOSTINGER_FTP_USERNAME}  
+  password: ${HOSTINGER_FTP_PASSWORD}  
+  
+export:
+  method: ftp  # Options: auto, ftp, selenium, simulate
+  
+content_generation:
+  topics_file: website_configs/topics/dogtolib.csv
+  batch_size: 4
+  max_concurrent: 4
+
+# Blog configuration section used by website-enricher
+blog_config:
+  site:
+    title: Dogtolib - Blog sur la passion canine
+    domain: dogtolib.com
+    company_name: Dogtolib
+    description: Votre ressource privilégiée pour comprendre, éduquer et créer des liens profonds avec votre compagnon canin
+    tagline: L'art de comprendre et d'éduquer votre fidèle compagnon
+    author:
+      name: Dr. Wouf
+      bio: Passionné de chiens, passionné par la relation entre les humains et leurs compagnons
+      photo: src/assets/images/author_dogtolib.jpeg
+    logo: /images/dogtolib-logo.png
+    favicon: /images/dogtolib-favicon.ico
+    cta_link: https://www.dogtolib.com/
+
+  social:
+    instagram: https://instagram.com/dogtolib
+    facebook: https://facebook.com/dogtolib
+    twitter: https://twitter.com/dogtolib
+
+  contact:
+    email: info@dogtolib.com
+    phone: +33 9 87 65 43 21
+
+  seo:
+    defaultTitle: Dogtolib - Blog sur la passion canine
+    defaultDescription: Découvrez nos conseils sur la passion canine, astuces et méthodes positives pour une relation harmonieuse avec votre chien
+    defaultImage: /images/dogtolib-share.jpg
+    googleAnalyticsId: G-DOG1234XX
+
+  ui:
+    backgroundColor: "#F5F7FA"
+    primaryColor: "#2563EB"
+    headerBackground: "#1E293B"
+    textColor: "#1F2937"
+    linkColor: "#3B82F6"
+
+  blog:
+    blogIndexBackground: src/assets/images/background/dog_waterfall_4.webp
+    postsPerPage: 12
+    showAuthorBio: true
+    showSocialShare: true
+    showRecentPosts: true
+    recentPostsCount: 5
+    categories:
+      - Chien
+      - Loisirs
+      - Conseils
+      - Santé
+      - Nutrition
+      - Entretien
+      - Bien-être 

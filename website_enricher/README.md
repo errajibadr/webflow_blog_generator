@@ -37,12 +37,18 @@ npm install
 
 ## ⚙️ Configuration
 
-1. Create a `blog-config.json` file based on the example provided:
+1. Create a config file based on the examples provided. You can use either JSON or YAML format:
 ```bash
+# JSON format (blog config only)
 cp blog-config.example.json blog-config.json
+
+# Or YAML format (can be full site config with blog_config section)
+cp example-config.yaml your-config.yaml
 ```
 
 2. Customize the configuration file with your settings:
+
+### JSON Format (Blog Config Only)
 ```json
 {
     "site": {
@@ -69,6 +75,37 @@ cp blog-config.example.json blog-config.json
 }
 ```
 
+### YAML Format
+YAML configs can be either:
+
+1. A standalone blog config (similar to JSON structure):
+```yaml
+site:
+  title: Your Blog Title
+  description: Your blog description
+  logo: /images/logo.png
+  favicon: /images/favicon.ico
+# ... more blog config ...
+```
+
+2. Or a full site configuration with a nested blog_config section (like @dogtolib.yaml):
+```yaml
+website:
+  name: your-site
+  domain: example.com
+  # ... other site settings ...
+  
+# ... other sections ...
+
+# This is the section used by the enricher
+blog_config:
+  site:
+    title: Your Blog Title
+    # ... more blog config ...
+```
+
+The tool will automatically detect if it's a full site YAML (with blog_config) or a standalone blog config.
+
 ## 📊 CSV Format
 
 Your blog posts should be in a CSV file with the following columns:
@@ -86,26 +123,31 @@ Your blog posts should be in a CSV file with the following columns:
 Run the generator with the following command:
 
 ```bash
-node enrich-webflow-export.js --export <webflow-export-dir> --csv <posts-csv-directory> --config <config-json-file> --output <output-dir> [--port <port-number>]
+node enrich-webflow-export.js --export <webflow-export-dir> --csv <posts-csv-directory> --config <config-file> --output <output-dir> [--port <port-number>]
 ```
 
 Options:
 - `--export, -e`: Path to Webflow export directory (required)
 - `--csv, -c`: Path to blog posts CSV file (required)
-- `--config, -f`: Path to blog config JSON file (required)
+- `--config, -f`: Path to blog config file in JSON or YAML format (required)
 - `--output, -o`: Output directory (default: 'dist')
 - `--port, -p`: Port for local testing (default: 3000)
 
 Example:
 ```bash
+# Using JSON config
 node enrich-webflow-export.js -e ./webflow-export -c ./posts.csv -f ./blog-config.json -o ./dist
+
+# Using YAML config
+node enrich-webflow-export.js -e ./webflow-export -c ./posts.csv -f ./config.yaml -o ./dist
 ```
 
-## 🏗️ Code Architecture
+## 🔧 Code Architecture
 
 The codebase is now fully modular for maintainability and extensibility:
 
 - **enrich-webflow-export.js**: Minimal CLI entrypoint. Parses arguments and orchestrates the build using modules.
+- **config.js**: Handles loading and validating configuration from JSON or YAML files.
 - **utils.js**: General utility functions (date parsing, slugify, text truncation, content processing, etc).
 - **posts.js**: Handles reading, validating, and normalizing blog post data from CSV/JSON.
 - **blog.js**: Generates blog listing and individual post pages from normalized data.
