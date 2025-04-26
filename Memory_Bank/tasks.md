@@ -29,6 +29,24 @@
     - [x] Update example configurations
     - [x] Create quick-start guide for credential setup
 
+- [ ] Refactor and optimize FTP import functionality
+  - [x] Phase 1: Function consolidation
+    - [x] Create FTPImporter class in dedicated module
+    - [x] Implement connection and directory management methods
+    - [x] Implement file upload logic with retry capabilities
+    - [x] Create unified import method combining features of both existing functions
+    - [x] Update main importer.py to use the new implementation
+  - [ ] Phase 2: Performance optimization
+    - [ ] Implement concurrent file uploads using ThreadPoolExecutor
+    - [ ] Add file batching for directories with many small files
+    - [ ] Implement retry logic with exponential backoff
+    - [ ] Add progress reporting for long-running operations
+  - [ ] Phase 3: Advanced features
+    - [ ] Add optional checksum-based file comparison
+    - [ ] Implement chunked uploads for large files
+    - [ ] Add bandwidth throttling options
+    - [ ] Test and benchmark optimized implementation
+
 - [x] Refactor codebase for improved maintainability
   - [x] Phase 1: Refactor credential manager
     - [x] Create credentials package structure
@@ -90,3 +108,7 @@
   - [x] Document credential management system 
   - [x] Create Makefile for common operations
   - [x] Add quick-start guides and examples 
+- [x] Create FTP importer refactoring plan
+  - [x] Analyze duplicate FTP import functionality
+  - [x] Design modular implementation with improved error handling
+  - [x] Plan performance optimizations through concurrency 

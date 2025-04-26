@@ -34,7 +34,7 @@ enrich: check-site
 	python main.py --website $(SITE) --enrich
 
 # Run the import step
-import: check-site
+upload: check-site
 	python main.py --website $(SITE) --import
 
 # Run in dry-run mode (no changes)
