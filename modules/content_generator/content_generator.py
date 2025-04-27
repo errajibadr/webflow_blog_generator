@@ -7,6 +7,7 @@ This module generates SEO content for websites based on configuration.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -39,6 +40,107 @@ def process_image_placeholders(content: str, image_details: List[ImageDetail]) -
     return content
 
 
+async def generate_content_async(config: Dict, website_name: str) -> Path:
+    """
+    Generate content using the content generation API (async version).
+
+    Args:
+        config: The loaded configuration
+        website_name: Name of the website to generate content for
+
+    Returns:
+        Path to the generated content directory
+    """
+    logger = logging.getLogger("orchestrator.content_generator")
+    website_config = config["website"]
+    content_config = website_config.get("content_generation", {})
+
+    # Determine the workspace directory
+    workspace_name = website_config["website"].get("workspace", website_name)
+    locale = website_config["website"].get("locale", "fr")
+    content_dir = Path(config["paths"]["workspaces"]) / workspace_name / "content"
+    images_dir = content_dir / "images"
+
+    # Create content and images directories if they don't exist
+    os.makedirs(content_dir, exist_ok=True)
+    os.makedirs(images_dir, exist_ok=True)
+
+    logger.info(f"Generating content for website: {website_name} in {content_dir}")
+
+    # Get content generation parameters
+    topics_file = content_config.get("topics_file")
+    if not topics_file:
+        logger.error("No topics file specified in configuration")
+        raise ValueError("No topics file specified in configuration")
+
+    batch_size = content_config.get(
+        "batch_size", config.get("defaults", {}).get("content_generation", {}).get("batch_size", 2)
+    )
+    max_concurrent = content_config.get(
+        "max_concurrent",
+        config.get("defaults", {}).get("content_generation", {}).get("max_concurrent", 3),
+    )
+
+    logger.info(f"Using topics file: {topics_file}")
+    logger.info(f"Batch size: {batch_size}")
+    logger.info(f"Max concurrent: {max_concurrent}")
+
+    # TODO: Implement local SEO support in the API and handle the local_seo option here
+    if content_config.get("local_seo") is not None:
+        logger.warning("Local SEO option is not yet supported in the API version")
+
+    try:
+        # Initialize the event processor with the topics file and max_concurrent parameter
+        processor = EventProcessor(topics_file=topics_file, max_concurrent_tasks=max_concurrent)
+
+        # Use the async version to get batch results concurrently
+        results = await processor.process_batch_async(
+            batch_size=batch_size,
+            tone="friendly and familiar",  # TODO: Make this configurable
+            locale=locale,
+            poll_status=True,
+            output_dir=content_dir,
+        )
+
+        # Process each result and save to files
+        for result in results:
+            if result["status"] == "SUCCESS" and "blog_article" in result:
+                blog_article: BlogArticle = result["blog_article"]
+
+                # Process image placeholders in the content
+                if hasattr(blog_article, "content"):
+                    blog_article.content = process_image_placeholders(
+                        blog_article.content, blog_article.image_details
+                    )
+
+                try:
+                    # Use slug for filename
+                    if not blog_article.slug:
+                        logger.warning("Blog article has no slug, using default name")
+                        filename = blog_article.title.lower().replace(" ", "-")
+                    else:
+                        filename = f"{blog_article.slug}.json"
+
+                    file_path = content_dir / filename
+
+                    # Convert blog article to dictionary and save as JSON
+                    article_data = blog_article.to_json_dict()
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        json.dump(article_data, f, ensure_ascii=False, indent=4)
+
+                    logger.info(f"Saved blog article to {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to save blog article: {e}")
+                    raise
+
+        logger.info(f"Generated content for website: {website_name}")
+        return content_dir
+
+    except Exception as e:
+        logger.error(f"Content generation failed: {e}")
+        raise RuntimeError(f"Content generation failed: {e}")
+
+
 def generate_content(config: Dict, website_name: str) -> Path:
     """
     Generate content using the content generation API.
@@ -54,7 +156,14 @@ def generate_content(config: Dict, website_name: str) -> Path:
     website_config = config["website"]
     content_config = website_config.get("content_generation", {})
 
-    # Determine the workspace directory
+    # Check if async is specifically disabled
+    use_async = content_config.get("use_async", True)
+
+    if use_async:
+        # Use asyncio.run to run the async version from the synchronous API
+        return asyncio.run(generate_content_async(config, website_name))
+
+    # Original synchronous implementation
     workspace_name = website_config["website"].get("workspace", website_name)
     locale = website_config["website"].get("locale", "fr")
     content_dir = Path(config["paths"]["workspaces"]) / workspace_name / "content"

@@ -9,3 +9,4 @@ webdriver-manager>=4.0.1 # Webdriver management for Selenium
 ftputil>=5.0.4         # For FTP-based website exports 
 pydantic>=2.5.2        # For data validation and settings management
 cryptography==44.0.2
+aiohttp>=3.9.1         # For async HTTP requests

@@ -33,6 +33,10 @@ generate: check-site
 enrich: check-site
 	python main.py --website $(SITE) --enrich
 
+# Run the generate and enrich steps
+generate-enrich: check-site
+	python main.py --website $(SITE) --generate --enrich
+
 # Run the upload step
 upload: check-site
 	python main.py --website $(SITE) --upload
