@@ -79,21 +79,13 @@ async function copyAssets(outputDir, config) {
   console.log('\nProcessing Webflow exported CSS files...');
   const cssDir = path.join(outputDir, 'css');
   const cssFiles = await fs.readdir(cssDir);
-  const staticCssFiles = [
-    'normalize.css',
-    'webflow.css',
-    'blog-index.css',
-    'social-icons.css',
-    'blog-style.css'
-  ];
+  
+  // Process all CSS files in the directory
   for (const cssFile of cssFiles) {
     if (cssFile.endsWith('.css')) {
-      const isWebflowGenerated = cssFile.match(/.*\.webflow\.css$/);
-      if (isWebflowGenerated || staticCssFiles.includes(cssFile)) {
-        const cssPath = path.join(cssDir, cssFile);
-        console.log(`Processing CSS file: ${cssFile}`);
-        await minifyFile(cssPath, 'css');
-      }
+      const cssPath = path.join(cssDir, cssFile);
+      console.log(`Processing CSS file: ${cssFile}`);
+      await minifyFile(cssPath, 'css');
     }
   }
 
